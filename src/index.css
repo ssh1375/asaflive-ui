@@ -151,7 +151,13 @@ html[data-theme="green"] {
     scrollbar-width: none;
 }
 
-
+.p-column-header-content{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+}
 
 
 

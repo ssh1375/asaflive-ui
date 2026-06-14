@@ -3,6 +3,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ManagementPanel from "./ManagementPanel";
 import DefineUser from "./DefineUser";
+import OriginDefineUser from "./OriginDefineUser.tsx";
 const Dashboard = lazy(() => import("./features/Dashboard"));
 const MediaTester = lazy(() => import("./features/lobby/MediaTester"));
 const MobileMediaTester = lazy(() => import("./features/lobby/MobileMediaTester.tsx"));
@@ -22,7 +23,8 @@ function App() {
       <Routes>
         <Route path="/" element={<ManagementPanel />}>
           <Route index element={<Dashboard />} />
-          <Route path="define-user" element={<DefineUser />} />
+          <Route path="define-role-user" element={<DefineUser />} />
+          <Route path="define-user" element={<OriginDefineUser />} />
         </Route>
 
 

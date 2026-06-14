@@ -14,12 +14,20 @@ const NAV_ITEMS = [
     iconAlt: "خانه",
   },
   {
-    to: "/define-user",
+    to: "/define-role-user",
     end: false,
     label: "تعریف نقش کاربر",
      iconActive: homeBlack,
     iconInactive: homeWhite,
     iconAlt: "تعریف نقش کاربر",
+  },
+  {
+    to: "/define-user",
+    end: false,
+    label: "تعریف  کاربر",
+     iconActive: homeBlack,
+    iconInactive: homeWhite,
+    iconAlt: "تعریف  کاربر",
   },
 ];
 
