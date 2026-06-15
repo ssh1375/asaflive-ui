@@ -1,296 +1,239 @@
-// RoleForm.tsx
-import { useState } from "react";
+import React, { useState, useCallback } from "react";
+// فرض بر این است که این کامپوننت‌ها در پروژه شما وجود دارند
 import TextInput from "./shared/Forms/TextInput";
 import Checkbox from "./shared/Forms/Checkbox";
 
-const MODULES = ["کاربران", "گزارش‌ها", "تنظیمات", "مالی", "محصولات", "پشتیبانی"];
-
-const STATIC_ACTIONS = [
-  { id: "read", label: "خواندن" },
-  { id: "write", label: "نوشتن" },
-];
-
-interface ActionItem {
-  id: string;
-  label: string;
-  isStatic: boolean;
-}
-
-interface Role {
+// ۱. تعریف دقیق ساختار داده بر اساس قالب درخواستی شما
+interface PermissionItem {
   id: string;
   name: string;
   description: string;
-  actions: ActionItem[];
-  permissions: Record<string, Record<string, boolean>>;
+  isCustom?: boolean; // برای تشخیص دسترسی‌های اضافه‌شده توسط کاربر و امکان حذف آن‌ها
 }
 
-let nextId = 1;
-const genId = () => `role-${nextId++}`;
+// ۲. لیست اولیه دسترسی‌ها با فرمت جدید
+const INITIAL_PERMISSIONS: PermissionItem[] = [
+  {
+    id: "2c2a04d3-d726-4e3d-be3f-60f9d9d12ace",
+    name: "مدیریت کاربران",
+    description: "Claim new insurance issue",
+  },
+  {
+    id: "3fb1724c-7130-4fe2-9034-a5021aa9e0be",
+    name: "نمایش بدهی ها",
+    description: "",
+  },
+  {
+    id: "a196e4c0-fec3-4d07-ae46-4991c197fc22",
+    name: "خوانش موارد",
+    description: "",
+  },
+  {
+    id: "ed81f08d-3b78-42bf-9341-2d8776ec51d7",
+    name: "insurance-cmr:claim",
+    description: "Claim new insurance issue",
+  },
+];
 
-const createDefaultRole = (): Role => {
-  const actions: ActionItem[] = STATIC_ACTIONS.map(a => ({ ...a, isStatic: false }));
-  console.log(actions);
+interface Role {
+  name: string;
+  description: string;
+  activePermissions: string[]; 
+}
 
-  const perms: Record<string, Record<string, boolean>> = {};
-  MODULES.forEach(mod => {
-    perms[mod] = {};
-    actions.forEach(a => { perms[mod][a.id] = false; });
-  });
-  return {
-    id: genId(),
+export default function RoleForm() {
+  const [role, setRole] = useState<Role>({
     name: "",
     description: "",
-    actions,
-    permissions: perms,
-  };
-};
+    activePermissions: [],
+  });
 
-export default function DefineRole() {
-  const [roles, setRoles] = useState<Role[]>([createDefaultRole()]);
-  const [selectedId, setSelectedId] = useState<string>(roles[0].id);
-  const [newActionLabel, setNewActionLabel] = useState("");
+  // مدیریت وضعیت لیست کل دسترسی‌های سیستم
+  const [availablePermissions, setAvailablePermissions] = useState<PermissionItem[]>(INITIAL_PERMISSIONS);
+  
+  // وضعیت‌های مربوط به فرم افزودن دسترسی جدید
+  const [newPermName, setNewPermName] = useState("");
+  const [newPermDesc, setNewPermDesc] = useState("");
 
-  const selectedRole = roles.find(r => r.id === selectedId) ?? roles[0];
-
-
-  const updateSelected = (updater: (role: Role) => Role) => {
-    setRoles(prev =>
-      prev.map(r => (r.id === selectedId ? updater(r) : r))
-    );
+  const handleInputChange = (field: keyof Role, value: string) => {
+    setRole((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleNameChange = (name: string) => updateSelected(r => ({ ...r, name }));
-  const handleDescChange = (desc: string) => updateSelected(r => ({ ...r, description: desc }));
+  const addNewPermission = () => {
+    const name = newPermName.trim();
+    if (!name) return;
 
-  const addAction = () => {
-    const label = newActionLabel.trim();
-    if (!label) return;
-    const id = label.replace(/\s+/g, "_").toLowerCase();
-    if (selectedRole.actions.some(a => a.id === id)) return;
+    if (availablePermissions.some((p) => p.name === name)) return;
 
-    updateSelected(role => {
-      const newAction: ActionItem = { id, label, isStatic: false };
-      const actions = [...role.actions, newAction];
-      const permissions = { ...role.permissions };
-      MODULES.forEach(mod => {
-        permissions[mod] = { ...permissions[mod], [id]: false };
-      });
-      return { ...role, actions, permissions };
-    });
-    setNewActionLabel("");
+    const newId = crypto.randomUUID ? crypto.randomUUID() : `custom-${Date.now()}`;
+
+    const newPermission: PermissionItem = {
+      id: newId,
+      name: name,
+      description: newPermDesc.trim(),
+      isCustom: true,
+    };
+
+    setAvailablePermissions((prev) => [...prev, newPermission]);
+    setNewPermName("");
+    setNewPermDesc("");
   };
 
-  const removeAction = (actionId: string) => {
-    updateSelected(role => {
-      const actions = role.actions.filter(a => a.id !== actionId);
-      const permissions = { ...role.permissions };
-      MODULES.forEach(mod => {
-        const { [actionId]: _, ...rest } = permissions[mod];
-        permissions[mod] = rest;
-      });
-      return { ...role, actions, permissions };
-    });
-  };
-
-  const togglePerm = (mod: string, act: string) => {
-    updateSelected(role => ({
-      ...role,
-      permissions: {
-        ...role.permissions,
-        [mod]: {
-          ...role.permissions[mod],
-          [act]: !role.permissions[mod][act]
-        },
-      },
+  // حذف آبشاری (Cascade Delete): حذف از سیستم و نقش جاری
+  const removePermissionDef = (permId: string) => {
+    setAvailablePermissions((prev) => prev.filter((p) => p.id !== permId));
+    setRole((prev) => ({
+      ...prev,
+      activePermissions: prev.activePermissions.filter((id) => id !== permId),
     }));
   };
 
-
-
-  const toggleModule = (mod: string) => {
-    updateSelected(role => {
-      const allOn = role.actions.every(a => role.permissions[mod][a.id]);
-      const newModPerms: Record<string, boolean> = {};
-      role.actions.forEach(a => { newModPerms[a.id] = !allOn; });
+  // تغییر وضعیت (Toggle) انتخاب دسترسی برای نقش
+  const togglePermission = useCallback((permId: string) => {
+    setRole((prev) => {
+      const hasPerm = prev.activePermissions.includes(permId);
       return {
-        ...role,
-        permissions: {
-          ...role.permissions,
-          [mod]: newModPerms
-        },
+        ...prev,
+        activePermissions: hasPerm
+          ? prev.activePermissions.filter((id) => id !== permId)
+          : [...prev.activePermissions, permId],
       };
     });
-  };
+  }, []);
 
-  const addRole = () => {
-    const newRole = createDefaultRole();
-    setRoles(prev => [...prev, newRole]);
-    setSelectedId(newRole.id);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Submitting Role Payload:", JSON.stringify(role, null, 2));
+    // Payload ارسالی به API کاملا منطبق بر ساختار RESTful خواهد بود
   };
-
-  const removeRole = (id: string) => {
-    if (roles.length <= 1) return;
-    setRoles(prev => prev.filter(r => r.id !== id));
-    if (selectedId === id) {
-      setSelectedId(roles.filter(r => r.id !== id)[0]?.id ?? "");
-    }
-  };
-
-  const actions = selectedRole.actions;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 p-4">
-      <div className="w-full max-w-3xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
-
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 p-4" dir="rtl">
+      <div className="w-full max-w-4xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
+        
         <h2 className="text-xl font-bold text-blue-400 border-b border-blue-500/20 pb-3">
-          مدیریت نقش‌های کاربری
+          ایجاد نقش کاربری جدید
         </h2>
 
-        <div className="flex flex-wrap gap-2 items-start">
-          {roles.map(role => (
-            <div key={role.id} className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setSelectedId(role.id)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer
-                  ${role.id === selectedId
-                    ? "bg-blue-600 text-white shadow"
-                    : "bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10"
-                  }`}
-              >
-                {role.name || "نقش جدید"}
-              </button>
-              {roles.length > 1 && (
-                <button
-                  onClick={() => removeRole(role.id)}
-                  className="text-red-400 hover:text-red-300 px-1 text-sm cursor-pointer"
-                  title="حذف نقش"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-          <button
-            onClick={addRole}
-            className="px-3 py-1.5 rounded-lg text-sm bg-green-600/20 border border-green-500/30 text-green-400 hover:bg-green-600/30 cursor-pointer"
-          >
-            ＋ افزودن نقش
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-5">
-          <div className="flex gap-3 flex-wrap">
-            <TextInput
-              value={selectedRole.name}
-              onValueChange={handleNameChange}
-              placeholder="نام نقش"
-              className="flex-1"
-            />
-            <TextInput
-              value={selectedRole.description}
-              onValueChange={handleDescChange}
-              placeholder="توضیحات (اختیاری)"
-              className="flex-[2]"
-            />
-          </div>
-
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10 flex flex-col gap-3">
-            <h3 className="text-sm font-semibold text-gray-300">دسترسی های این نقش</h3>
-            <div className="flex flex-wrap gap-2">
-              {actions.map(act => (
-                <div
-                  key={act.id}
-                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm border
-                    ${act.isStatic
-                      ? "bg-blue-500/20 border-blue-500/30 text-blue-300"
-                      : "bg-white/5 border-gray-600 text-gray-300"
-                    }`}
-                >
-                  <span>{act.label}</span>
-                  {!act.isStatic && (
-                    <button
-                      onClick={() => removeAction(act.id)}
-                      className="text-red-400 hover:text-red-300 text-xs ml-1 cursor-pointer"
-                      title="حذف اکشن"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 items-center">
-              <input
-                value={newActionLabel}
-                onChange={(e) => setNewActionLabel(e.target.value)}
-                placeholder="دسترسی جدید را وارد نمایید"
-                className="bg-white/10 border border-white/10 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 flex-1"
-                onKeyDown={(e) => { if (e.key === 'Enter') addAction(); }}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          {/* بخش اطلاعات پایه نقش */}
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex-1 min-w-[250px]">
+              <TextInput
+                value={role.name}
+                onValueChange={(val) => handleInputChange("name", val)}
+                placeholder="نام نقش (مثال: مدیر مالی)"
+                required
               />
-              <button
-                onClick={addAction}
-                className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-1.5 rounded cursor-pointer"
-              >
-                افزودن
-              </button>
+            </div>
+            <div className="flex-[2] min-w-[250px]">
+              <TextInput
+                value={role.description}
+                onValueChange={(val) => handleInputChange("description", val)}
+                placeholder="توضیحات کلی در مورد این نقش..."
+              />
             </div>
           </div>
 
-          <div className="rounded-xl overflow-hidden border border-white/10">
-            <div
-              className="grid bg-white/5 px-4 py-2 text-sm text-gray-400 font-medium"
-              style={{ gridTemplateColumns: `1fr repeat(${actions.length}, 1fr)` }}
-            >
-              <span>ماژول</span>
-              {actions.map(a => (
-                <span key={a.id} className="text-center">{a.label}</span>
-              ))}
-            </div>
+          {/* بخش مدیریت دسترسی‌ها */}
+          <div className="bg-white/5 rounded-xl p-5 border border-white/10 flex flex-col gap-4">
+            <h3 className="text-base font-semibold text-gray-200 border-b border-white/5 pb-2">
+              تخصیص دسترسی‌ها
+            </h3>
 
-            {MODULES.map((mod, i) => {
-              const allOn = actions.every(a => selectedRole.permissions[mod][a.id]);
-              return (
-                <div
-                  key={mod}
-                  className={`grid items-center px-4 py-3 transition-colors
-                    ${i % 2 === 0 ? "bg-white/[0.02]" : "bg-transparent"}
-                    hover:bg-blue-500/5`}
-                  style={{ gridTemplateColumns: `1fr repeat(${actions.length}, 1fr)` }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleModule(mod)}
-                    className={`text-right text-sm font-medium transition-colors
-                      ${allOn ? "text-blue-400" : "text-gray-300"}`}
+            {/* گرید دسترسی‌ها */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {availablePermissions.map((perm) => {
+                const isChecked = role.activePermissions.includes(perm.id);
+                return (
+                  <div
+                    key={perm.id}
+                    className={`flex items-start justify-between p-3 rounded-lg border transition-all duration-200 ${
+                      isChecked
+                        ? "bg-blue-500/10 border-blue-500/40"
+                        : "bg-black/20 border-white/5 hover:border-white/10"
+                    }`}
                   >
-                    {mod}
-                  </button>
-
-                  {actions.map(act => {
-                    const on = selectedRole.permissions[mod][act.id];
-                    return (
-                      <div key={act.id} className="flex justify-center">
+                    <label className="flex items-start gap-3 cursor-pointer flex-1">
+                      <div className="pt-1">
                         <Checkbox
-                          checked={selectedRole.permissions[mod][act.id]}
-                          onToggle={() => togglePerm(mod, act.id)}
+                          checked={isChecked}
+                          onToggle={() => togglePermission(perm.id)}
                         />
                       </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
+                      <div className="flex flex-col select-none">
+                        <span className={`text-sm font-medium ${isChecked ? "text-blue-100" : "text-gray-300"}`}>
+                          {perm.name}
+                        </span>
+                        {perm.description && (
+                          <span className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                            {perm.description}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+
+                    {perm.isCustom && (
+                      <button
+                        type="button"
+                        onClick={() => removePermissionDef(perm.id)}
+                        className="text-gray-500 hover:text-red-400 transition-colors px-2 text-lg"
+                        title="حذف کامل این دسترسی از سیستم"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {availablePermissions.length === 0 && (
+              <p className="text-gray-500 text-sm text-center py-4">هیچ دسترسی در سیستم تعریف نشده است.</p>
+            )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => console.log("Saved roles:", roles)}
-            className="self-end bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-2 rounded-lg transition-colors cursor-pointer"
-          >
-            ذخیره تغییرات
-          </button>
-        </div>
+          {/* فرم افزودن دسترسی سفارشی (Custom Permission) */}
+          <div className="bg-black/30 rounded-xl p-4 border border-white/5 flex flex-col sm:flex-row gap-3 items-end">
+             <div className="flex-1 w-full">
+               <label className="block text-xs text-gray-400 mb-1">نام دسترسی جدید</label>
+               <input
+                  value={newPermName}
+                  onChange={(e) => setNewPermName(e.target.value)}
+                  placeholder="مثال: report:export_pdf"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+               />
+             </div>
+             <div className="flex-1 w-full">
+               <label className="block text-xs text-gray-400 mb-1">توضیحات (اختیاری)</label>
+               <input
+                  value={newPermDesc}
+                  onChange={(e) => setNewPermDesc(e.target.value)}
+                  placeholder="توضیح کوتاه..."
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNewPermission(); } }}
+               />
+             </div>
+             <button
+                type="button"
+                onClick={addNewPermission}
+                disabled={!newPermName.trim()}
+                className="w-full sm:w-auto bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm px-5 py-2 rounded-lg cursor-pointer transition-colors"
+             >
+                افزودن به لیست
+             </button>
+          </div>
+
+          {/* دکمه عملیات نهایی */}
+          <div className="flex justify-end mt-4">
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 cursor-pointer"
+            >
+              ذخیره نقش
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

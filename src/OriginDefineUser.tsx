@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { userSchema, type UserData } from "./hooks/validation/create-origin-user";
 import DynamicTable from "./shared/Tabel/DynamicTable";
 import getNestedValue from "./hooks/pubFunc/getNestedValue";
-import api from "./hooks/req/api/api";
+import api from "./api/api";
 
 type Errors = Partial<Record<keyof UserData, string>>;
 
@@ -80,14 +80,14 @@ export default function OriginDefineUser({
   const handleSubmit = () => {
     // onSubmit?.(user);
     console.log(user);
-    
+
     if (validate()) {
-      api.post("/users",user).then((res)=>{
+      api.post("/users", user).then((res) => {
         setrefFlage(true)
         toast.success('اطلاعات با موفقیت ذخیره شد!')
-      }).catch((err)=>{
+      }).catch((err) => {
         toast.error("خطایی در ساخت کاربر رخ داده است")
-      }).finally(()=>setrefFlage(false))
+      }).finally(() => setrefFlage(false))
     }
 
   };
@@ -155,7 +155,7 @@ export default function OriginDefineUser({
           refreshFlag={refFlage}
           recordsPerPage={10}
           customRender={(row, colIndex) => {
-            
+
             const col = columns[colIndex];
             if (col && customRenderers[col.accessor]) {
               return customRenderers[col.accessor](row[col.accessor], row);

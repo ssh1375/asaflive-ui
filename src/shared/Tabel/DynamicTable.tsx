@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { DataTable, type DataTableStateEvent, type DataTableSelectionSingleChangeEvent } from "primereact/datatable";
 import { Column } from "primereact/column";
-import api from "../../hooks/req/api/api";
+import api from "../../api/api";
 import moment from "moment-jalaali";
 import PersianDigits from "../PersianText";
 // import { toShamsi } from "../../../utils/dateUtils";
@@ -207,7 +207,7 @@ const DynamicTable = <T extends Record<string, any>>({
 
                 // const response = await api.get(url, axiosConfig);
                 console.log("1");
-                
+
                 const response = await api.get(url, axiosConfig);
                 console.log("2");
 
