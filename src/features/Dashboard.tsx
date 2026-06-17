@@ -6,6 +6,9 @@ import MeetingTypeModal from "../shared/MeetingTypeModal";
 import AccessDevice, { type MediaDeviceType } from '../shared/AccessDevice';
 import { useMeetingHardware } from '../hooks/useMeetingHardware.js';
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth.js";
+import AuthModal from "../AuthModal.js";
+import { useUIStore } from "../store/useUIStore.js";
 
 type TypewriterProps = {
   text?: string[];
@@ -192,12 +195,17 @@ export default function Dashboard() {
   const [isFocused, setIsFocused] = useState(false);
 
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState<boolean>(false);
+
+  const isAuthenticated = useUIStore((s) => s.isAuthenticated);
 
   const [activeDevice, setActiveDevice] = useState<MediaDeviceType | null>(null);
   const [selectedMeetingType, setSelectedMeetingType] = useState<string | null>(null);
 
   const navigate = useNavigate();
+
+  const { isLoading: isAuthLoading, refetch } = useAuth();
 
   const {
     audioDevices,
@@ -211,11 +219,11 @@ export default function Dashboard() {
     setSelectedMeetingType(type);
     setIsMeetingModalOpen(false);
     console.log('نوع جلسه انتخاب‌شده:', type);
-    if(type){
+    if (type) {
       alert("Hi")
-      navigate('/session/testDevice'); 
+      navigate('/session/testDevice');
     }
-   
+
   };
   const handleAccessSelect = (type: MediaDeviceType) => {
     setActiveDevice(type);
@@ -243,6 +251,25 @@ export default function Dashboard() {
       audio: streams.getAudioTracks()[0]
     }
   };
+  const handleProtectedMeetingAction = async () => {
+    if (isAuthenticated) {
+      setIsMeetingModalOpen(true);
+      return;
+    }
+
+    try {
+      const { data } = await refetch();
+      if (data) {
+        setIsMeetingModalOpen(true);
+      } else {
+        setIsAuthModalOpen(true);
+      }
+    } catch (err) {
+      console.error("Authentication check failed", err);
+      setIsAuthModalOpen(true);
+    }
+  };
+
 
 
 
@@ -259,6 +286,16 @@ export default function Dashboard() {
         onSelect={handleAccessSelect}
         onClose={() => setIsAccessModalOpen(false)}
       />
+      {!isAuthenticated && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={() => {
+            setIsAuthModalOpen(false);
+            setIsMeetingModalOpen(true);
+          }}
+        />
+      )}
       <div dir="rtl" className="flex flex-col items-center justify-center h-full text-center px-4">
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
           <Typewriter
@@ -329,12 +366,21 @@ export default function Dashboard() {
             {isProcessing ? 'در حال بررسی سخت‌افزار...' : 'انتخاب نوع جلسه'}
 
           </button>
-          <button
-            onClick={() => setIsMeetingModalOpen(true)}
+          {/* <button
+            onClick={() => { setIsMeetingModalOpen(true) }}
             className="w-full text-center px-6 py-3 bg-transparent border border-white hover:bg-white hover:text-gray-900 text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base"
           >
             انتخاب نوع جلسه
+          </button> */}
+          <button
+            onClick={handleProtectedMeetingAction}
+            disabled={isAuthLoading}
+            className={`w-full text-center px-6 py-3 bg-transparent border border-white text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base 
+              ${isAuthLoading ? 'opacity-50 cursor-wait' : 'hover:bg-white hover:text-gray-900'}`}
+          >
+            {isAuthLoading ? 'در حال بررسی...' : 'ورود به جلسه'}
           </button>
+
           {/* <NavLink
             to="/register"
             className="w-full text-center px-6 py-3 bg-transparent border border-white hover:bg-white hover:text-gray-900 text-white rounded-lg font-medium transition-colors duration-200"

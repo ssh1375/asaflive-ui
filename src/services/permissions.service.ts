@@ -4,12 +4,13 @@ export interface PermissionItem {
   id: string;
   name: string;
   description: string;
+  
 }
-const ENDPOINT = '/permissions'; 
+const ENDPOINT = '/rbac/permissions';
 
 
 export const permissionsService = {
-   getAll: async (): Promise<PermissionItem[]> => {
+  getAll: async (): Promise<PermissionItem[]> => {
     const { data } = await api.get<PermissionItem[]>(ENDPOINT);
     return data;
   },

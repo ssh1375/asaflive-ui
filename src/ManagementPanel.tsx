@@ -90,7 +90,7 @@ export default function ManagementPanel() {
       </aside>
 
       {/* محتوای اصلی */}
-      <div dir="rtl" className="flex-1 flex flex-col min-w-0">
+      <div  className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between p-3 border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-20">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200">
@@ -104,7 +104,7 @@ export default function ManagementPanel() {
           >
             ☰
           </button>
-        </header><main className="flex-1 overflow-auto">
+        </header><main dir="rtl" className="flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>

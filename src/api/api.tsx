@@ -3,8 +3,8 @@ import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
 const api: AxiosInstance = axios.create({
   // baseURL: '192.168.10.139:3000',
-  baseURL: 'http://192.168.10.139:3000',
-  // baseURL: "/api/local-transpor/",
+  // baseURL: 'http://192.168.10.139:3000',
+  baseURL: "https://asaflive.ir/",
   timeout: 60000, // 60 seconds timeout
   withCredentials: true,
 });

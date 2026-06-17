@@ -206,10 +206,8 @@ const DynamicTable = <T extends Record<string, any>>({
                 if (controller && controller.signal) axiosConfig.signal = controller.signal;
 
                 // const response = await api.get(url, axiosConfig);
-                console.log("1");
 
                 const response = await api.get(url, axiosConfig);
-                console.log("2");
 
                 console.log(response)
                 const body = response.data;
