@@ -15,7 +15,7 @@ export function useAuth() {
         if (!response.data || Object.keys(response.data).length === 0) {
           return null;
         }
-        
+
         return response.data;
       } catch {
         return null;

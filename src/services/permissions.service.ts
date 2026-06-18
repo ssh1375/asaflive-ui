@@ -4,7 +4,6 @@ export interface PermissionItem {
   id: string;
   name: string;
   description: string;
-  
 }
 const ENDPOINT = '/rbac/permissions';
 

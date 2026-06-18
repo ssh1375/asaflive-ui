@@ -6,6 +6,7 @@ import { userSchema, type UserData } from "./hooks/validation/create-origin-user
 import DynamicTable from "./shared/Tabel/DynamicTable";
 import getNestedValue from "./hooks/pubFunc/getNestedValue";
 import api from "./api/api";
+import RoleAssignmentModal from "./RoleAssignmentModal";
 
 type Errors = Partial<Record<keyof UserData, string>>;
 
@@ -29,8 +30,8 @@ interface OriginDefineUserProps {
   initialValue?: UserData;
   onSubmit?: (user: UserData) => void;
 }
-type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNode>;
 
+type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNode>;
 
 export default function OriginDefineUser({
   initialValue = EMPTY_USER,
@@ -39,20 +40,32 @@ export default function OriginDefineUser({
   const [user, setUser] = useState<UserData>(initialValue);
   const [errors, setErrors] = useState<Errors>({});
   const [refFlage, setrefFlage] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
 
   const customRenderers: CustomRenderersType = {
-    // مثال: اگر خواستید ستون شماره تلفن چپ‌چین و با فونت متفاوت باشد
     phone: (value: string) => (
       <span className="font-mono text-blue-400" dir="ltr">{value}</span>
     ),
-    // می‌توانید برای ستون‌های دیگر هم اینجا تابع بنویسید
+    access: (value: any, row: any) => {
+      return (
+        <button
+          onClick={() => setSelectedUser({ 
+            id: row.id, 
+            name: `${row.firstName} ${row.lastName}` 
+          })}
+          className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
+        >
+          مدیریت نقش‌ها
+        </button>
+      );
+    }
   };
 
   const columns = [
     { header: "نام", accessor: "firstName" },
     { header: "نام خانوادگی", accessor: "lastName" },
     { header: "شماره همراه", accessor: "phone" },
-
+    { header: "دسترسی‌ها", accessor: "access", showSearch: false },
   ];
 
   const updateField = (field: keyof UserData) => (value: string) => {
@@ -60,7 +73,7 @@ export default function OriginDefineUser({
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-  }
+  };
 
   const validate = (): boolean => {
     const result = userSchema.safeParse(user);
@@ -78,22 +91,21 @@ export default function OriginDefineUser({
   };
 
   const handleSubmit = () => {
-    // onSubmit?.(user);
-    console.log(user);
-
     if (validate()) {
-      api.post("/users", user).then((res) => {
-        setrefFlage(true)
-        toast.success('اطلاعات با موفقیت ذخیره شد!')
-      }).catch((err) => {
-        toast.error("خطایی در ساخت کاربر رخ داده است")
-      }).finally(() => setrefFlage(false))
+      api.post("/users", user)
+        .then(() => {
+          setrefFlage(true);
+          toast.success('اطلاعات با موفقیت ذخیره شد!');
+          setUser(EMPTY_USER);
+        })
+        .catch(() => {
+          toast.error("خطایی در ساخت کاربر رخ داده است");
+        })
+        .finally(() => setrefFlage(false));
     }
-
   };
 
   return (
-
     <div className="flex items-center flex-col justify-center min-h-screen bg-gray-900 p-4">
       <div className="w-full max-w-3xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
         <h2 className="text-white text-lg font-semibold">تعریف کاربر جدید</h2>
@@ -112,8 +124,6 @@ export default function OriginDefineUser({
             error={errors.lastName}
           />
         </div>
-
-
 
         <TextInput
           type="email"
@@ -143,11 +153,12 @@ export default function OriginDefineUser({
         <button
           type="button"
           onClick={handleSubmit}
-          className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded cursor-pointer"
+          className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded cursor-pointer transition-colors"
         >
           ذخیره کاربر
         </button>
       </div>
+
       <div className="w-11/12">
         <DynamicTable
           apiEndpoint="/users/"
@@ -155,7 +166,6 @@ export default function OriginDefineUser({
           refreshFlag={refFlage}
           recordsPerPage={10}
           customRender={(row, colIndex) => {
-
             const col = columns[colIndex];
             if (col && customRenderers[col.accessor]) {
               return customRenderers[col.accessor](row[col.accessor], row);
@@ -163,15 +173,17 @@ export default function OriginDefineUser({
               const value = getNestedValue(row, col.accessor);
               return value || '-';
             }
-
           }}
         />
       </div>
 
+      {selectedUser && (
+        <RoleAssignmentModal
+          userId={selectedUser.id}
+          userName={selectedUser.name}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
     </div>
-
-
-
-
   );
 }

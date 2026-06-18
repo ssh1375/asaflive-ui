@@ -4,23 +4,33 @@ import TextInput from "./shared/Forms/TextInput";
 import Checkbox from "./shared/Forms/Checkbox";
 
 import { permissionsService, type PermissionItem } from "./services/permissions.service";
+import toast from "react-hot-toast";
+import api from "./api/api";
+import GiveAllRoles from "./shared/Tabel/GiveAllRoles";
 
+interface Domain {
+  id: string;
+  name: string;
+}
 interface Role {
   name: string;
   description: string;
-  activePermissions: string[];
+  permissions: string[];
+  domainId: string;
 }
 
 export default function RoleForm() {
   const [role, setRole] = useState<Role>({
     name: "",
     description: "",
-    activePermissions: [],
+    domainId: "",
+    permissions: [],
   });
-
+  const [domains, setDomains] = useState<Domain[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<PermissionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshRolesFlag, setRefreshRolesFlag] = useState(false);
 
   const [newPermName, setNewPermName] = useState("");
   const [newPermDesc, setNewPermDesc] = useState("");
@@ -30,6 +40,13 @@ export default function RoleForm() {
       try {
         setLoading(true);
         const data = await permissionsService.getAll();
+        console.log(data);
+
+        if (String(data?.status) === "401" || String(data?.status) === "500") {
+          toast.error('متاسفانه شما دسترسی به این بخش ندارید')
+          throw new Error("دسترسی غیرمجاز است");
+        }
+        
         setAvailablePermissions(data);
         setError(null);
       } catch (err) {
@@ -40,6 +57,37 @@ export default function RoleForm() {
       }
     };
     fetchPermissions();
+  }, []);
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        setLoading(true);
+
+        const res = await api.get<Domain[]>("/rbac/domains");
+        const domainList = Array.isArray(res.data) ? res.data : [];
+
+        setDomains(domainList);
+        setError(null);
+
+        const asafDomain = domainList.find((d) => d.name === "asaflive.ir");
+
+        if (asafDomain) {
+          setRole((prev) => ({
+            ...prev,
+            domainId: asafDomain.id,
+          }));
+        } else {
+          console.warn('دامنه "asaflive.ir" در لیست دامین‌ها پیدا نشد');
+        }
+      } catch (err) {
+        setError("خطا در دریافت لیست دامنه‌ها");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDomains();
   }, []);
 
   const handleInputChange = (field: keyof Role, value: string) => {
@@ -61,7 +109,7 @@ export default function RoleForm() {
       setAvailablePermissions((prev) => [...prev, created]);
       setRole((prev) => ({
         ...prev,
-        activePermissions: [...prev.activePermissions, created.id],
+        permissions: [...prev.permissions, created.id],
       }));
       setNewPermName("");
       setNewPermDesc("");
@@ -77,7 +125,7 @@ export default function RoleForm() {
       setAvailablePermissions((prev) => prev.filter((p) => p.id !== permId));
       setRole((prev) => ({
         ...prev,
-        activePermissions: prev.activePermissions.filter((id) => id !== permId),
+        permissions: prev.permissions.filter((id) => id !== permId),
       }));
     } catch (err) {
       alert("حذف دسترسی ناموفق بود");
@@ -87,25 +135,35 @@ export default function RoleForm() {
 
   const togglePermission = useCallback((permId: string) => {
     setRole((prev) => {
-      const hasPerm = prev.activePermissions.includes(permId);
+      const hasPerm = prev.permissions.includes(permId);
       return {
         ...prev,
-        activePermissions: hasPerm
-          ? prev.activePermissions.filter((id) => id !== permId)
-          : [...prev.activePermissions, permId],
+        permissions: hasPerm
+          ? prev.permissions.filter((id) => id !== permId)
+          : [...prev.permissions, permId],
       };
     });
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting Role Payload:", JSON.stringify(role, null, 2));
+    api.post("/rbac/roles", role)
+      .then((res) => {
+        toast.success("نقش با موفقیت ساخته شد");
+        console.log("Submitting Role Payload:", JSON.stringify(role, null, 2));
+        setRefreshRolesFlag(prev => !prev);
+        // setRole((prev) => ({ ...prev, name: "", description: "", permissions: [] }));
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("خطا در ساخت نقش");
+      });
   };
 
-  
+
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 p-4" dir="rtl">
+    <div className="flex items-center justify-center flex-col min-h-screen bg-gray-900 p-4" dir="rtl">
       <div className="w-full max-w-4xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
         <h2 className="text-xl font-bold text-blue-400 border-b border-blue-500/20 pb-3">
           ایجاد نقش کاربری جدید
@@ -179,7 +237,7 @@ export default function RoleForm() {
                 {error}
               </div>
             )}
-            
+
             {!loading && !error && (
               <>
                 {availablePermissions.length === 0 ? (
@@ -189,7 +247,7 @@ export default function RoleForm() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {availablePermissions?.map((perm) => {
-                      const isChecked = role.activePermissions.includes(perm.id);
+                      const isChecked = role.permissions.includes(perm.id);
                       return (
                         <div
                           key={perm.id}
@@ -220,14 +278,14 @@ export default function RoleForm() {
                             </div>
                           </label>
 
-                          <button
+                          {/* <button
                             type="button"
                             onClick={() => removePermissionDef(perm.id)}
                             className="text-gray-500 hover:text-red-400 transition-colors px-2 text-lg"
                             title="حذف کامل این دسترسی از سیستم"
                           >
                             ×
-                          </button>
+                          </button> */}
                         </div>
                       );
                     })}
@@ -247,6 +305,7 @@ export default function RoleForm() {
           </div>
         </form>
       </div>
+      <GiveAllRoles refreshFlag={refreshRolesFlag} />
     </div>
   );
 }

@@ -357,7 +357,7 @@ export default function Dashboard() {
             <span className="text-nowrap">پیوستن به جلسه</span>
           </NavLink> */}
 
-
+{/* 
           <button
             onClick={handleMeetingSetup}
             disabled={isProcessing}
@@ -365,7 +365,7 @@ export default function Dashboard() {
           >
             {isProcessing ? 'در حال بررسی سخت‌افزار...' : 'انتخاب نوع جلسه'}
 
-          </button>
+          </button> */}
           {/* <button
             onClick={() => { setIsMeetingModalOpen(true) }}
             className="w-full text-center px-6 py-3 bg-transparent border border-white hover:bg-white hover:text-gray-900 text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base"

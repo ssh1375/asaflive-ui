@@ -312,7 +312,7 @@ const DynamicTable = <T extends Record<string, any>>({
         if (col.customSearch) {
             return (
                 <div className="flex flex-col gap-1">
-                    <div className="font-bold text-sm text-white">{col.header}</div>
+                    <div className="font-bold text-sm text-white whitespace-nowrap">{col.header}</div>
                     {col.customSearch}
                 </div>
             );
@@ -322,7 +322,7 @@ const DynamicTable = <T extends Record<string, any>>({
             <div className="flex flex-col gap-1">
                 <div className="font-bold text-sm text-white whitespace-nowrap">{col.header}</div>
                 <input
-                    className={`outline-none text-center text-blue-600 text-sm px-2 py-1 rounded-md bg-bl-400 ${col.width ?? "w-[80%]"} mr-[10%] border font-medium border-bl-800 border-opacity-50 focus:border-bl-600 focus:ring-1 focus:ring-bl-800 ${col.showSearch === false ? "hidden" : ""}`}
+                    className={`outline-none text-center text-blue-600 text-sm px-2 py-1 rounded-md bg-bl-400 ${col.width ?? "w-[80%]"} mr-[10%] border font-medium border-bl-800 border-opacity-50 focus:border-bl-600 focus:ring-1 focus:ring-bl-800 ${col.showSearch === false ? "!hidden" : ""}`}
                     placeholder={`جستجو ${col.header}`}
                     value={columnFilters[col.renameSearch ?? col.accessor] || ''}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -348,13 +348,15 @@ const DynamicTable = <T extends Record<string, any>>({
 
             <div className="bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] p-5 border border-slate-700/50">
 
-                <div className="bg-slate-800/40 rounded-2xl shadow-[inset_0_2px_15px_rgba(0,0,0,0.2)] border border-slate-600/30 overflow-hidden">
-                    <div>
+                <div className="bg-slate-800/40 rounded-2xl shadow-[inset_0_2px_15px_rgba(0,0,0,0.2)] border border-slate-600/30 ">
+                    <div  className="overflow-x-auto custom-scroll">
                         <DataTable
                             value={rowsToShow}
                             paginator={true}
                             // totalRecords={pagination.total}
                             rows={pagination.limit}
+                            scrollable
+                            scrollHeight="flex"
                             {...AnotherProperty}
                             dataKey="id"
                             emptyMessage={
@@ -382,7 +384,7 @@ const DynamicTable = <T extends Record<string, any>>({
                             {columns.map((col, index) => {
                                 const headerContent = col.showSearch === false
                                     ? (
-                                        <div className="font-semibold text-xs text-slate-300 uppercase tracking-widest px-2">
+                                        <div className="font-bold text-sm text-white relative  px-2">
                                             {col.header}
                                         </div>
                                     )
