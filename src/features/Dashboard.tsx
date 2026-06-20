@@ -207,20 +207,19 @@ export default function Dashboard() {
 
   const { isLoading: isAuthLoading, refetch } = useAuth();
 
-  const {
-    audioDevices,
-    videoDevices,
-    permissionError,
-    isProcessing,
-    requestHardwareAccess
-  } = useMeetingHardware();
+  // const {
+  //   audioDevices,
+  //   videoDevices,
+  //   permissionError,
+  //   isProcessing,
+  //   requestHardwareAccess
+  // } = useMeetingHardware();
 
   const handleMeetingSelect = (type: string) => {
     setSelectedMeetingType(type);
     setIsMeetingModalOpen(false);
     console.log('نوع جلسه انتخاب‌شده:', type);
     if (type) {
-      alert("Hi")
       navigate('/session/testDevice');
     }
 
@@ -262,14 +261,16 @@ export default function Dashboard() {
       if (data) {
         setIsMeetingModalOpen(true);
       } else {
+        
         setIsAuthModalOpen(true);
+        // navigate('/login')
       }
     } catch (err) {
       console.error("Authentication check failed", err);
       setIsAuthModalOpen(true);
     }
   };
-
+  
 
 
 

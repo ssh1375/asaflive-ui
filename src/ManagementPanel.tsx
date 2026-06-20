@@ -3,6 +3,8 @@ import { NavLink, Outlet } from "react-router-dom";
 import homeBlack from "./assets/icons/home-black.svg";
 import homeWhite from "./assets/icons/home-white.svg";
 import userAvatar from "./assets/panel/User.svg";
+import api from "./api/api";
+import toast from "react-hot-toast";
 
 const NAV_ITEMS = [
   {
@@ -17,7 +19,7 @@ const NAV_ITEMS = [
     to: "/define-role-user",
     end: false,
     label: "تعریف نقش کاربر",
-     iconActive: homeBlack,
+    iconActive: homeBlack,
     iconInactive: homeWhite,
     iconAlt: "تعریف نقش کاربر",
   },
@@ -25,7 +27,7 @@ const NAV_ITEMS = [
     to: "/define-user",
     end: false,
     label: "تعریف  کاربر",
-     iconActive: homeBlack,
+    iconActive: homeBlack,
     iconInactive: homeWhite,
     iconAlt: "تعریف  کاربر",
   },
@@ -45,6 +47,7 @@ export default function ManagementPanel() {
     if (mobileOpen) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
+
 
   const navClass = (isActive: boolean) =>
     `flex items-center justify-center gap-3 py-2 px-3 rounded-md transition-colors w-full text-sm ${isActive ? "bg-blue-600 text-black font-semibold shadow-inner" : "hover:bg-white/5 active:bg-white/10"
@@ -87,10 +90,22 @@ export default function ManagementPanel() {
         <nav className="flex flex-col gap-2 mt-2 items-center" aria-label="منوی مدیریت">
           {renderLinks()}
         </nav>
+        <div className="mt-auto pt-4 border-t border-blue-500/30">
+          <button onClick={async()=>{
+            await api.post("/auth/logout").then((res)=>{
+              toast.success("خروج با موفقیت انجام شد")
+            }).catch(()=>{
+              toast.error("نشد که بشه")
+            })
+          }} className="w-full py-3 text-center text-xl text-white hover:bg-blue-500/20 rounded-lg transition-colors">
+            خروج
+          </button>
+        </div>
       </aside>
 
+
       {/* محتوای اصلی */}
-      <div  className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between p-3 border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-20">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200">

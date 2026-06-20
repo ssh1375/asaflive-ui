@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import api from './api/api';
 import toast from 'react-hot-toast';
-
+import { useLocation, useNavigate } from 'react-router-dom';
 interface AuthModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+  onClose?: () => void;
+  onSuccess?: () => void;
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -13,7 +13,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // استیت یکپارچه برای مدیریت تمام فیلدها
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isLoginRoute = location.pathname.toLowerCase().includes('login');
+
   const [formData, setFormData] = useState({
     phone: '',
     password: '',
@@ -33,24 +36,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
     setError(null);
 
     try {
-      const payload = activeTab === 'login' 
+      const payload = activeTab === 'login'
         ? { phone: formData.phone, password: formData.password }
-        : { ...formData }; 
+        : { ...formData };
 
       const endpoint = activeTab === 'login' ? '/auth/login' : '/auth/register';
 
       const response = await api.post(endpoint, payload);
       console.log(response?.data?.status);
-      
-      if(response?.data?.status=="409"){
+
+      if (response?.data?.status == "409") {
         toast.error("کاربر قبلا در سیستم تعریف شده است")
-        throw error
+        throw new Error("409_CONFLICT");
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success("عملیات با موفقیت انجام شد")
 
-      onSuccess();
-      onClose();
+      onSuccess?.();
+      onClose?.();
+      const from = location.state?.from?.pathname || "/";
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.message || 'خطایی رخ داده است.');
       toast.error("خطایی در انجام عملیات رخ داد")
@@ -60,12 +65,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
     }
   };
 
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
-          ✕
-        </button>
+        {/* متغیر isLoginRoute حاوی یک مقدار Boolean است (true یا false) */}
+        {!isLoginRoute && (
+          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+            ✕
+          </button>
+        )}
+
 
         <div className="flex border-b mb-6">
           <button

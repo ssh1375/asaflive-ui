@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useUIStore } from "../store/useUIStore";
 import api from "../api/api";
+import { useNavigate } from "react-router-dom";
 
 export function useAuth() {
   const openAuthModal = useUIStore((state) => state.openAuthModal);
   const setAuth = useUIStore((state) => state.setAuth);
+  const navigate = useNavigate();
 
   const query = useQuery({
     queryKey: ["authUser"],
@@ -15,9 +17,15 @@ export function useAuth() {
         if (!response.data || Object.keys(response.data).length === 0) {
           return null;
         }
-
+        
+        
         return response.data;
-      } catch {
+      } catch(err) {
+        console.log(err);
+        
+        if(err?.status=="401"){
+          navigate("/login")
+        }
         return null;
       }
     },

@@ -10,7 +10,7 @@ const Dashboard = lazy(() => import("./features/Dashboard"));
 const MediaTester = lazy(() => import("./features/lobby/MediaTester"));
 const MobileMediaTester = lazy(() => import("./features/lobby/MobileMediaTester.tsx"));
 const Main = lazy(() => import("./features/meeting/Main"));
-
+const AuthModal=lazy(()=>import("./AuthModal.tsx"))
 
 /*controller req server */
 const queryClient = new QueryClient({
@@ -28,6 +28,7 @@ const Spinner = () => (
   </div>
 );
 
+
 function App() {
 
 
@@ -35,6 +36,10 @@ function App() {
     <Suspense fallback={<Spinner />}>
       <QueryClientProvider client={queryClient}>
         <Routes>
+          <Route path="/login" >
+            <Route index element={<AuthModal isOpen={true}  />} />
+          
+          </Route>
           <Route path="/" element={<ManagementPanel />}>
             <Route index element={<Dashboard />} />
             <Route path="define-role-user" element={<DefineUser />} />
