@@ -35,6 +35,11 @@ export default function RoleForm() {
   const [newPermName, setNewPermName] = useState("");
   const [newPermDesc, setNewPermDesc] = useState("");
 
+  // حالت ویرایش
+  const [editingPermId, setEditingPermId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
@@ -58,6 +63,7 @@ export default function RoleForm() {
     };
     fetchPermissions();
   }, []);
+
   useEffect(() => {
     const fetchDomains = async () => {
       try {
@@ -145,6 +151,53 @@ export default function RoleForm() {
     });
   }, []);
 
+  const startEdit = (perm: PermissionItem) => {
+    setEditingPermId(perm.id);
+    setEditName(perm.name);
+    setEditDescription(perm.description || "");
+  };
+
+  const cancelEdit = () => {
+    setEditingPermId(null);
+    setEditName("");
+    setEditDescription("");
+  };
+
+  const saveEdit = async (permId: string) => {
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
+      toast.error("نام دسترسی نمی‌تواند خالی باشد");
+      return;
+    }
+
+    try {
+      await api.patch(`/rbac/permissions/${permId}`, {
+        name: trimmedName,
+        description: editDescription.trim(),
+      });
+
+      setAvailablePermissions((prev) =>
+        prev.map((p) =>
+          p.id === permId
+            ? { ...p, name: trimmedName, description: editDescription.trim() }
+            : p
+        )
+      );
+
+      toast.success("دسترسی با موفقیت ویرایش شد");
+      cancelEdit();
+    } catch (err) {
+      console.error(err);
+       const isBusinessError = err?.name === "BusinessError";
+
+      const isUniqueConstraint =
+        isBusinessError &&
+        (err?.message?.includes("Unique constraint violation"));
+      isUniqueConstraint?toast.error("دسترسی تعریف شده است"):toast.error("خطا در ویرایش دسترسی")
+      
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     api.post("/rbac/roles", role)
@@ -152,15 +205,12 @@ export default function RoleForm() {
         toast.success("نقش با موفقیت ساخته شد");
         console.log("Submitting Role Payload:", JSON.stringify(role, null, 2));
         setRefreshRolesFlag(prev => !prev);
-        // setRole((prev) => ({ ...prev, name: "", description: "", permissions: [] }));
       })
       .catch((err) => {
         console.error(err);
         toast.error("خطا در ساخت نقش");
       });
   };
-
-
 
   return (
     <div className="flex items-center justify-center flex-col min-h-screen bg-gray-900 p-4" dir="rtl">
@@ -187,6 +237,7 @@ export default function RoleForm() {
               />
             </div>
           </div>
+
           <div className="bg-black/30 rounded-xl p-4 border border-white/5 flex flex-col sm:flex-row gap-3 items-end">
             <div className="flex-1 w-full">
               <label className="block text-xs text-gray-400 mb-1">نام دسترسی جدید</label>
@@ -222,6 +273,7 @@ export default function RoleForm() {
               افزودن به لیست
             </button>
           </div>
+
           <div className="bg-white/5 rounded-xl p-5 border border-white/10 flex flex-col gap-4">
             <h3 className="text-base font-semibold text-gray-200 border-b border-white/5 pb-2">
               تخصیص دسترسی‌ها
@@ -248,44 +300,98 @@ export default function RoleForm() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {availablePermissions?.map((perm) => {
                       const isChecked = role.permissions.includes(perm.id);
+                      const isEditing = editingPermId === perm.id;
+
                       return (
                         <div
                           key={perm.id}
-                          className={`flex items-start justify-between p-3 rounded-lg border transition-all duration-200 ${isChecked
-                            ? "bg-blue-500/10 border-blue-500/40"
-                            : "bg-black/20 border-white/5 hover:border-white/10"
-                            }`}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all duration-200 ${
+                            isChecked
+                              ? "bg-blue-500/10 border-blue-500/40"
+                              : "bg-black/20 border-white/5 hover:border-white/10"
+                          }`}
                         >
-                          <label className="flex items-start gap-3 cursor-pointer flex-1">
-                            <div className="pt-1">
-                              <Checkbox
-                                checked={isChecked}
-                                onToggle={() => togglePermission(perm.id)}
+                          {isEditing ? (
+                            <div className="flex-1 flex flex-col gap-2">
+                              <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-blue-500"
+                                placeholder="نام دسترسی"
                               />
+                              <input
+                                type="text"
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-blue-500"
+                                placeholder="توضیحات"
+                              />
+                              <div className="flex gap-2 mt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => saveEdit(perm.id)}
+                                  className="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1 rounded transition-colors"
+                                >
+                                  تایید
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEdit}
+                                  className="bg-gray-600 hover:bg-gray-500 text-white text-xs px-3 py-1 rounded transition-colors"
+                                >
+                                  انصراف
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex flex-col select-none">
-                              <span
-                                className={`text-sm font-medium ${isChecked ? "text-blue-100" : "text-gray-300"
-                                  }`}
-                              >
-                                {perm.name}
-                              </span>
-                              {perm.description && (
-                                <span className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                                  {perm.description}
-                                </span>
-                              )}
-                            </div>
-                          </label>
+                          ) : (
+                            <>
+                              <label className="flex items-start gap-3 cursor-pointer flex-1">
+                                <div className="pt-1">
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onToggle={() => togglePermission(perm.id)}
+                                  />
+                                </div>
+                                <div className="flex flex-col select-none">
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      isChecked ? "text-blue-100" : "text-gray-300"
+                                    }`}
+                                  >
+                                    {perm.name}
+                                  </span>
+                                  {perm.description && (
+                                    <span className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                      {perm.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
 
-                          {/* <button
-                            type="button"
-                            onClick={() => removePermissionDef(perm.id)}
-                            className="text-gray-500 hover:text-red-400 transition-colors px-2 text-lg"
-                            title="حذف کامل این دسترسی از سیستم"
-                          >
-                            ×
-                          </button> */}
+                              <button
+                                type="button"
+                                onClick={() => startEdit(perm)}
+                                className="text-gray-500 hover:text-blue-400 transition-colors px-2"
+                                title="ویرایش دسترسی"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                  />
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       );
                     })}
