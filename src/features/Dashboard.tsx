@@ -325,7 +325,7 @@ export default function Dashboard() {
 
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="col-span-2 md:col-span-2">
+          <div className=" md:col-span-2">
             <Input
               name="name"
               placeholder="کد جلسه را وارد کنید"

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import homeBlack from "./assets/icons/home-black.svg";
 import homeWhite from "./assets/icons/home-white.svg";
 import userAvatar from "./assets/panel/User.svg";
@@ -35,6 +35,7 @@ const NAV_ITEMS = [
 
 export default function ManagementPanel() {
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const prev = document.documentElement.style.overflow;
@@ -91,13 +92,14 @@ export default function ManagementPanel() {
           {renderLinks()}
         </nav>
         <div className="mt-auto pt-4 border-t border-blue-500/30">
-          <button onClick={async()=>{
-            await api.post("/auth/logout").then((res)=>{
+          <button onClick={async () => {
+            await api.post("/auth/logout").then(() => {
               toast.success("خروج با موفقیت انجام شد")
-            }).catch(()=>{
-              toast.error("نشد که بشه")
+              navigate("/login")
+            }).catch(() => {
+              toast.error(".لطفا در سامانه ثبت نام نمایید")
             })
-          }} className="w-full py-3 text-center text-xl text-white hover:bg-blue-500/20 rounded-lg transition-colors">
+          }} className="w-full py-3 text-center text-xl text-white hover:bg-blue-500/20 rounded-lg transition-colors !cursor-pointer">
             خروج
           </button>
         </div>

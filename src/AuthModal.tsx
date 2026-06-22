@@ -43,12 +43,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
       const endpoint = activeTab === 'login' ? '/auth/login' : '/auth/register';
 
       const response = await api.post(endpoint, payload);
-      console.log(response?.data?.status);
 
-      if (response?.data?.status == "409") {
-        toast.error("کاربر قبلا در سیستم تعریف شده است")
-        throw new Error("409_CONFLICT");
-      }
+
+      // if (response?.data?.status == "409") {
+      //   toast.error("کاربر قبلا در سیستم تعریف شده است")
+      //   throw new Error("409_CONFLICT");
+      // }
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success("عملیات با موفقیت انجام شد")
 
@@ -57,7 +57,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
       const from = location.state?.from?.pathname || "/";
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'خطایی رخ داده است.');
+      const isBusinessError = err?.name === "BusinessError";
+
+      const isUniqueConstraint =
+        isBusinessError &&
+        (err?.message?.includes("Unique constraint violation"));
+      isUniqueConstraint?setError("کاربر در سیستم ثبت شده لطفا از بخش ورود اقدام نمایید."):setError("خطایی رخ داد لطفا مجدد اقدام نمایید")
+
+      // setError(err.response?.data?.message || '.خطایی رخ داده است');
       toast.error("خطایی در انجام عملیات رخ داد")
 
     } finally {
@@ -69,7 +76,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-        {/* متغیر isLoginRoute حاوی یک مقدار Boolean است (true یا false) */}
         {!isLoginRoute && (
           <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
             ✕
@@ -92,7 +98,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           </button>
         </div>
 
-        {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
+        {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm text-center">{error}</div>}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {activeTab === 'register' && (
