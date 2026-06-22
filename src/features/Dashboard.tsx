@@ -379,7 +379,7 @@ export default function Dashboard() {
             className={`w-full text-center px-6 py-3 bg-transparent border border-white text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base 
               ${isAuthLoading ? 'opacity-50 cursor-wait' : 'hover:bg-white hover:text-gray-900'}`}
           >
-            {isAuthLoading ? 'در حال بررسی...' : 'ورود به جلسه'}
+            {isAuthLoading ? 'در حال بررسی...' : 'ساخت به جلسه'}
           </button>
 
           {/* <NavLink

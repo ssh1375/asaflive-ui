@@ -40,6 +40,8 @@ export default function OriginDefineUser({
   const [user, setUser] = useState<UserData>(initialValue);
   const [errors, setErrors] = useState<Errors>({});
   const [refFlage, setrefFlage] = useState<boolean>(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
 
   const customRenderers: CustomRenderersType = {
@@ -49,15 +51,37 @@ export default function OriginDefineUser({
     access: (value: any, row: any) => {
       return (
         <button
-          onClick={() => setSelectedUser({ 
-            id: row.id, 
-            name: `${row.firstName} ${row.lastName}` 
+          onClick={() => setSelectedUser({
+            id: row.id,
+            name: `${row.firstName} ${row.lastName}`
           })}
           className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
         >
           مدیریت نقش‌ها
         </button>
       );
+    },
+    edite: (val: any, row: any) => {
+
+      return (
+        <button onClick={() => {
+
+          setEditingUserId(row.id);
+          setUser({
+            firstName: row?.firstName || "",
+            lastName: row?.lastName || "",
+            phone: row?.phone || "",
+            email: row?.email || "",
+            password: "",
+          });
+          toast.success("اطلاعات کاربر در فرم قرار گرفت")
+
+          setErrors({});
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }} className="px-3 py-1 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded transition-colors">
+          ویرایش کاربر
+        </button>
+      )
     }
   };
 
@@ -66,6 +90,7 @@ export default function OriginDefineUser({
     { header: "نام خانوادگی", accessor: "lastName" },
     { header: "شماره همراه", accessor: "phone" },
     { header: "دسترسی‌ها", accessor: "access", showSearch: false },
+    { header: "ویرایش کاربر", accessor: "edite", showSearch: false },
   ];
 
   const updateField = (field: keyof UserData) => (value: string) => {
@@ -91,17 +116,28 @@ export default function OriginDefineUser({
   };
 
   const handleSubmit = () => {
+
     if (validate()) {
-      api.post("/users", user)
-        .then(() => {
-          setrefFlage(true);
-          toast.success('اطلاعات با موفقیت ذخیره شد!');
-          setUser(EMPTY_USER);
-        })
-        .catch(() => {
-          toast.error("خطایی در ساخت کاربر رخ داده است");
-        })
-        .finally(() => setrefFlage(false));
+      if (editingUserId) {
+        api.patch(`/users/${editingUserId}`).then(() => {
+          setrefFlage(true)
+          toast.success("کاربر با موفقیت ویرایش شد")
+        }).catch(() => {
+          toast.error("خطایی در ویرایش کاربر رخ داده است");
+        }).finally(() => setrefFlage(false))
+      }
+      else {
+        api.post("/users", user)
+          .then(() => {
+            setrefFlage(true);
+            toast.success('اطلاعات با موفقیت ذخیره شد!');
+            setUser(EMPTY_USER);
+          })
+          .catch(() => {
+            toast.error("خطایی در ساخت کاربر رخ داده است");
+          })
+          .finally(() => setrefFlage(false));
+      }
     }
   };
 
@@ -155,7 +191,7 @@ export default function OriginDefineUser({
           onClick={handleSubmit}
           className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded cursor-pointer transition-colors"
         >
-          ذخیره کاربر
+          {!editingUserId ? "ذخیره کاربر" : "ویرایش کاربر"}
         </button>
       </div>
 

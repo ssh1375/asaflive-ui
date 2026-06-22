@@ -52,7 +52,7 @@ function GiveAllRoles({ refreshFlag }: GiveAllRolesProps) {
   };
 
   return (
-    <div className='container'>
+    <div className='w-11/12'>
       <DynamicTable
         apiEndpoint="/rbac/roles"
         columns={columns}
