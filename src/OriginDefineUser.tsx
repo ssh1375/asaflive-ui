@@ -44,6 +44,12 @@ export default function OriginDefineUser({
 
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
 
+  const resetForm = () => {
+    setUser(EMPTY_USER);
+    setEditingUserId(null);
+    setErrors({});
+  };
+
   const customRenderers: CustomRenderersType = {
     phone: (value: string) => (
       <span className="font-mono text-blue-400" dir="ltr">{value}</span>
@@ -62,10 +68,8 @@ export default function OriginDefineUser({
       );
     },
     edite: (val: any, row: any) => {
-
       return (
         <button onClick={() => {
-
           setEditingUserId(row.id);
           setUser({
             firstName: row?.firstName || "",
@@ -74,8 +78,7 @@ export default function OriginDefineUser({
             email: row?.email || "",
             password: "",
           });
-          toast.success("اطلاعات کاربر در فرم قرار گرفت")
-
+          toast.success("اطلاعات کاربر در فرم قرار گرفت");
           setErrors({});
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }} className="px-3 py-1 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded transition-colors">
@@ -116,22 +119,24 @@ export default function OriginDefineUser({
   };
 
   const handleSubmit = () => {
-
     if (validate()) {
       if (editingUserId) {
-        api.patch(`/users/${editingUserId}`).then(() => {
-          setrefFlage(true)
-          toast.success("کاربر با موفقیت ویرایش شد")
-        }).catch(() => {
-          toast.error("خطایی در ویرایش کاربر رخ داده است");
-        }).finally(() => setrefFlage(false))
-      }
-      else {
+        api.patch(`/users/${editingUserId}`, user)
+          .then(() => {
+            setrefFlage(true);
+            toast.success("کاربر با موفقیت ویرایش شد");
+            resetForm();
+          })
+          .catch(() => {
+            toast.error("خطایی در ویرایش کاربر رخ داده است");
+          })
+          .finally(() => setrefFlage(false));
+      } else {
         api.post("/users", user)
           .then(() => {
             setrefFlage(true);
             toast.success('اطلاعات با موفقیت ذخیره شد!');
-            setUser(EMPTY_USER);
+            resetForm();
           })
           .catch(() => {
             toast.error("خطایی در ساخت کاربر رخ داده است");
@@ -144,7 +149,23 @@ export default function OriginDefineUser({
   return (
     <div className="flex items-center flex-col justify-center min-h-screen bg-gray-900 p-4">
       <div className="w-full max-w-3xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
-        <h2 className="text-white text-lg font-semibold">تعریف کاربر جدید</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-white text-lg font-semibold">
+            {editingUserId ? "ویرایش کاربر" : "تعریف کاربر جدید"}
+          </h2>
+          {editingUserId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              انصراف و ایجاد کاربر جدید
+            </button>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <TextInput
@@ -186,18 +207,34 @@ export default function OriginDefineUser({
           error={errors.password}
         />
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded cursor-pointer transition-colors"
-        >
-          {!editingUserId ? "ذخیره کاربر" : "ویرایش کاربر"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className={`flex-1 ${
+              editingUserId
+                ? "bg-yellow-600 hover:bg-yellow-500"
+                : "bg-blue-600 hover:bg-blue-500"
+            } text-white text-sm px-4 py-2 rounded cursor-pointer transition-colors`}
+          >
+            {editingUserId ? "ذخیره تغییرات" : "ذخیره کاربر"}
+          </button>
+          
+          {editingUserId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded transition-colors"
+            >
+              انصراف
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="w-11/12">
         <DynamicTable
-          apiEndpoint="/users/"
+          apiEndpoint="/users"
           columns={columns}
           refreshFlag={refFlage}
           recordsPerPage={10}
