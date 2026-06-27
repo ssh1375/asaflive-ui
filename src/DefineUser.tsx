@@ -1,8 +1,7 @@
+// RoleForm.tsx
 import React, { useState, useEffect, useCallback } from "react";
-
 import TextInput from "./shared/Forms/TextInput";
 import Checkbox from "./shared/Forms/Checkbox";
-
 import { permissionsService, type PermissionItem } from "./services/permissions.service";
 import toast from "react-hot-toast";
 import api from "./api/api";
@@ -35,23 +34,25 @@ export default function RoleForm() {
   const [newPermName, setNewPermName] = useState("");
   const [newPermDesc, setNewPermDesc] = useState("");
 
-  // حالت ویرایش
+  // حالت ویرایش permission
   const [editingPermId, setEditingPermId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+
+  // حالت ویرایش role
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
         setLoading(true);
         const data = await permissionsService.getAll();
-        console.log(data);
 
         if (String(data?.status) === "401" || String(data?.status) === "500") {
-          toast.error('متاسفانه شما دسترسی به این بخش ندارید')
+          toast.error('متاسفانه شما دسترسی به این بخش ندارید');
           throw new Error("دسترسی غیرمجاز است");
         }
-        
+
         setAvailablePermissions(data);
         setError(null);
       } catch (err) {
@@ -68,7 +69,6 @@ export default function RoleForm() {
     const fetchDomains = async () => {
       try {
         setLoading(true);
-
         const res = await api.get<Domain[]>("/rbac/domains");
         const domainList = Array.isArray(res.data) ? res.data : [];
 
@@ -76,12 +76,8 @@ export default function RoleForm() {
         setError(null);
 
         const asafDomain = domainList.find((d) => d.name === "asaflive.ir");
-
         if (asafDomain) {
-          setRole((prev) => ({
-            ...prev,
-            domainId: asafDomain.id,
-          }));
+          setRole((prev) => ({ ...prev, domainId: asafDomain.id }));
         } else {
           console.warn('دامنه "asaflive.ir" در لیست دامین‌ها پیدا نشد');
         }
@@ -92,8 +88,37 @@ export default function RoleForm() {
         setLoading(false);
       }
     };
-
     fetchDomains();
+  }, []);
+
+  const resetRoleForm = useCallback(() => {
+    setRole((prev) => ({
+      name: "",
+      description: "",
+      domainId: prev.domainId, // domainId رو نگه می‌داریم
+      permissions: [],
+    }));
+    setEditingRoleId(null);
+  }, []);
+
+  // وقتی روی "ویرایش نقش" در جدول کلیک می‌شه
+  const handleEditRole = useCallback((row: any) => {
+    setEditingRoleId(row.id);
+
+    // permissionهای موجود رو استخراج می‌کنیم (id یا آبجکت)
+    const permissionIds: string[] = Array.isArray(row.permissions)
+      ? row.permissions.map((p: any) => (typeof p === "string" ? p : p.id))
+      : [];
+
+    setRole((prev) => ({
+      name: row.name || "",
+      description: row.description || "",
+      domainId: prev.domainId,
+      permissions: permissionIds,
+    }));
+
+    toast.success("اطلاعات نقش در فرم قرار گرفت");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleInputChange = (field: keyof Role, value: string) => {
@@ -103,7 +128,6 @@ export default function RoleForm() {
   const addNewPermission = async () => {
     const name = newPermName.trim();
     if (!name) return;
-
     if (availablePermissions?.some((p) => p.name === name)) return;
 
     try {
@@ -111,7 +135,6 @@ export default function RoleForm() {
         name,
         description: newPermDesc.trim(),
       });
-
       setAvailablePermissions((prev) => [...prev, created]);
       setRole((prev) => ({
         ...prev,
@@ -186,38 +209,75 @@ export default function RoleForm() {
 
       toast.success("دسترسی با موفقیت ویرایش شد");
       cancelEdit();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-       const isBusinessError = err?.name === "BusinessError";
-
+      const isBusinessError = err?.name === "BusinessError";
       const isUniqueConstraint =
-        isBusinessError &&
-        (err?.message?.includes("Unique constraint violation"));
-      isUniqueConstraint?toast.error("دسترسی تعریف شده است"):toast.error("خطا در ویرایش دسترسی")
-      
+        isBusinessError && err?.message?.includes("Unique constraint violation");
+      isUniqueConstraint
+        ? toast.error("دسترسی تعریف شده است")
+        : toast.error("خطا در ویرایش دسترسی");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    api.post("/rbac/roles", role)
-      .then((res) => {
-        toast.success("نقش با موفقیت ساخته شد");
-        console.log("Submitting Role Payload:", JSON.stringify(role, null, 2));
-        setRefreshRolesFlag(prev => !prev);
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("خطا در ساخت نقش");
-      });
+
+    if (editingRoleId) {
+      // ویرایش نقش — فقط name، description و permissions ارسال می‌شه
+      api
+        .patch(`/rbac/roles/${editingRoleId}`, {
+          name: role.name,
+          description: role.description,
+          permissions: role.permissions,
+        })
+        .then(() => {
+          toast.success("نقش با موفقیت ویرایش شد");
+          setRefreshRolesFlag((prev) => !prev);
+          resetRoleForm();
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("خطا در ویرایش نقش");
+        });
+    } else {
+      // ساخت نقش جدید
+      api
+        .post("/rbac/roles", role)
+        .then(() => {
+          toast.success("نقش با موفقیت ساخته شد");
+          setRefreshRolesFlag((prev) => !prev);
+          resetRoleForm();
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("خطا در ساخت نقش");
+        });
+    }
   };
 
   return (
     <div className="flex items-center justify-center flex-col min-h-screen bg-gray-900 p-4" dir="rtl">
-      <div className="w-full max-w-4xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
-        <h2 className="text-xl font-bold text-blue-400 border-b border-blue-500/20 pb-3">
-          ایجاد نقش کاربری جدید
-        </h2>
+      <div className="w-full max-w-7xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
+
+        {/* هدر با دکمه انصراف در حالت ویرایش */}
+        <div className="flex items-center justify-between border-b border-blue-500/20 pb-3">
+          <h2 className="text-xl font-bold text-blue-400">
+            {editingRoleId ? "ویرایش نقش کاربری" : "ایجاد نقش کاربری جدید"}
+          </h2>
+          {editingRoleId && (
+            <button
+              type="button"
+              onClick={resetRoleForm}
+              className="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              انصراف و ایجاد نقش جدید
+            </button>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="flex gap-4 flex-wrap">
@@ -263,7 +323,6 @@ export default function RoleForm() {
                 }}
               />
             </div>
-
             <button
               type="button"
               onClick={addNewPermission}
@@ -354,11 +413,7 @@ export default function RoleForm() {
                                   />
                                 </div>
                                 <div className="flex flex-col select-none">
-                                  <span
-                                    className={`text-sm font-medium ${
-                                      isChecked ? "text-blue-100" : "text-gray-300"
-                                    }`}
-                                  >
+                                  <span className={`text-sm font-medium ${isChecked ? "text-blue-100" : "text-gray-300"}`}>
                                     {perm.name}
                                   </span>
                                   {perm.description && (
@@ -375,19 +430,8 @@ export default function RoleForm() {
                                 className="text-gray-500 hover:text-blue-400 transition-colors px-2"
                                 title="ویرایش دسترسی"
                               >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                  />
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                 </svg>
                               </button>
                             </>
@@ -401,17 +445,34 @@ export default function RoleForm() {
             )}
           </div>
 
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end gap-3 mt-4">
+            {editingRoleId && (
+              <button
+                type="button"
+                onClick={resetRoleForm}
+                className="px-6 py-2.5 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-xl transition-all"
+              >
+                انصراف
+              </button>
+            )}
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20"
+              className={`font-semibold px-8 py-2.5 rounded-xl transition-all shadow-lg ${
+                editingRoleId
+                  ? "bg-yellow-600 hover:bg-yellow-500 shadow-yellow-900/20"
+                  : "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20"
+              } text-white`}
             >
-              ذخیره نقش
+              {editingRoleId ? "ذخیره تغییرات" : "ذخیره نقش"}
             </button>
           </div>
         </form>
       </div>
-      <GiveAllRoles refreshFlag={refreshRolesFlag} />
+
+      <GiveAllRoles
+        refreshFlag={refreshRolesFlag}
+        onEditRole={handleEditRole}
+      />
     </div>
   );
 }

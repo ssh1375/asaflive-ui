@@ -86,7 +86,7 @@ const Main: React.FC = () => {
                         onClick={toggleChat}
                         className={`p-2 text-sm text-blue-600 md:text-base rounded-lg transition ${isChatOpen ? 'bg-blue-400' : 'hover:bg-[rgb(var(--bg-secondary))]-700'}`}
                     >
-                        چت
+                        کاربران
                     </button>
                     <button className="bg-red-600 hover:bg-red-700 px-3 py-1 md:px-4 md:py-1 rounded-md font-bold text-sm md:text-base ml-auto md:ml-0">پایان</button>
                     {/* <ThemeSwitcher /> */}

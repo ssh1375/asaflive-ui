@@ -29,11 +29,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ users }) => {
                     />
                 </div>
 
-                <div className="min-h-0 overflow-auto h-[44vh]">
+                {/* <div className="min-h-0 overflow-auto h-[44vh]">
                     <Chat
                         selectedUser={selectedUser}
                     />
-                </div>
+                </div> */}
             </div>
         </div>
     );

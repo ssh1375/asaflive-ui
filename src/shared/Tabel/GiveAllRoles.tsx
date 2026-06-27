@@ -7,14 +7,16 @@ type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNod
 
 interface GiveAllRolesProps {
   refreshFlag: boolean;
+  onEditRole?: (role: any) => void;
 }
 
-function GiveAllRoles({ refreshFlag }: GiveAllRolesProps) {
+function GiveAllRoles({ refreshFlag, onEditRole }: GiveAllRolesProps) {
 
   const columns = [
     { header: "عنوان نقش", accessor: "name" },
     { header: "توضیحات", accessor: "description" },
-    { header: "دسترسی ها", accessor: "permissions"  },
+    { header: "دسترسی ها", accessor: "permissions" },
+    ...(onEditRole ? [{ header: "ویرایش", accessor: "edit", showSearch: false }] : []),
   ];
 
   const customRenderers: CustomRenderersType = {
@@ -30,7 +32,6 @@ function GiveAllRoles({ refreshFlag }: GiveAllRolesProps) {
         <div className="flex flex-wrap gap-1 max-w-[280px]">
           {visible.map((perm: any) => {
             const name = typeof perm === "string" ? perm : perm.name;
-
             return (
               <span
                 key={name}
@@ -40,7 +41,6 @@ function GiveAllRoles({ refreshFlag }: GiveAllRolesProps) {
               </span>
             );
           })}
-
           {hiddenCount > 0 && (
             <span className="px-2 py-1 text-xs rounded-md bg-gray-700 text-gray-300">
               +{hiddenCount} more
@@ -49,6 +49,14 @@ function GiveAllRoles({ refreshFlag }: GiveAllRolesProps) {
         </div>
       );
     },
+    edit: (_val, row) => (
+      <button
+        onClick={() => onEditRole?.(row)}
+        className="px-3 py-1 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded transition-colors"
+      >
+        ویرایش نقش
+      </button>
+    ),
   };
 
   return (

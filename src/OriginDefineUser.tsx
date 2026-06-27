@@ -148,7 +148,7 @@ export default function OriginDefineUser({
 
   return (
     <div className="flex items-center flex-col justify-center min-h-screen bg-gray-900 p-4">
-      <div className="w-full max-w-3xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
+      <div className="w-full max-w-7xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-white text-lg font-semibold">
             {editingUserId ? "ویرایش کاربر" : "تعریف کاربر جدید"}

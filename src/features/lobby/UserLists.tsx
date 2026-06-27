@@ -17,7 +17,7 @@ const UserList: React.FC<UserListProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-zinc-100 font-bold text-sm">لیست کاربران</h2>
 
-        <button
+        {/* <button
           onClick={() => onSelectUser(null)}
           className={`text-xs px-3 py-1.5 rounded-lg transition ${
             selectedUser === null
@@ -26,6 +26,12 @@ const UserList: React.FC<UserListProps> = ({
           }`}
         >
           چت عمومی
+        </button> */}
+        <button
+          // onClick={() => onSelectUser(null)}
+          className={`text-xs px-3 py-1.5 rounded-lg transition bg-blue-600 text-white`}
+        >
+          افزودن کاربر+ 
         </button>
       </div>
 

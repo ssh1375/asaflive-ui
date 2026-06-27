@@ -324,8 +324,8 @@ export default function Dashboard() {
         </p>
 
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className=" md:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          {/* <div className=" md:col-span-2">
             <Input
               name="name"
               placeholder="کد جلسه را وارد کنید"
@@ -334,7 +334,7 @@ export default function Dashboard() {
               onFocusChange={(status) => setIsFocused(status)}
               autoComplete="off"
             />
-          </div>
+          </div> */}
 
           {/* <NavLink
             to="/login"
