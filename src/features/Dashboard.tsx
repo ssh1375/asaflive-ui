@@ -9,6 +9,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import AuthModal from "../AuthModal.js";
 import { useUIStore } from "../store/useUIStore.js";
+import type { SelectedMeetingType, SessionData } from "../hooks/useSessionFlow.js";
+import SessionCreationFlow from "../shared/SessionCreationFlow.js";
 
 type TypewriterProps = {
   text?: string[];
@@ -206,51 +208,30 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const { isLoading: isAuthLoading, refetch } = useAuth();
+  const { withAuthGuard } = useAuth();
+  const isMobile = (navigator as any).userAgentData?.mobile ?? false;
 
-  // const {
-  //   audioDevices,
-  //   videoDevices,
-  //   permissionError,
-  //   isProcessing,
-  //   requestHardwareAccess
-  // } = useMeetingHardware();
-
-  const handleMeetingSelect = (type: string) => {
-    setSelectedMeetingType(type);
+  const handleSessionFinalSubmit = (
+    data: SessionData,
+    type: SelectedMeetingType
+  ) => {
     setIsMeetingModalOpen(false);
-    console.log('نوع جلسه انتخاب‌شده:', type);
-    if (type) {
-      navigate('/session/testDevice');
-    }
-
+    console.log("آبجکت نهایی جلسه:", data, "نوع:", type);
+    navigate("/session/testDevice", {
+      state: { sessionInfo: data, meetingType: type },
+    });
   };
+
   const handleAccessSelect = (type: MediaDeviceType) => {
     setActiveDevice(type);
     setIsAccessModalOpen(false);
-    console.log('سخت‌افزار انتخاب‌شده:', type);
+    console.log("سخت‌افزار انتخاب‌شده:", type);
   };
-  const handleMeetingSetup = async () => {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const hasVideo = devices.some(device => device.kind === 'videoinput');
-    const hasAudio = devices.some(device => device.kind === 'audioinput');
-    if (!hasVideo && !hasAudio) {
-      console.warn("هیچ سخت‌افزار ورودی (صدا یا تصویر) روی این سیستم یافت نشد.");
-      return null;
-    }
-    const streams = await navigator.mediaDevices.getUserMedia({
-      video: hasVideo,
-      audio: hasAudio
-    });
-    if (streams) {
-      console.log("استریم با موفقیت دریافت شد:", streams);
-      setIsAccessModalOpen(true);
-    }
-    return {
-      video: streams.getVideoTracks()[0],
-      audio: streams.getAudioTracks()[0]
-    }
-  };
+ 
   const handleProtectedMeetingAction = async () => {
+    withAuthGuard(() => {
+      setIsMeetingModalOpen(true);
+    });
     if (isAuthenticated) {
       setIsMeetingModalOpen(true);
       return;
@@ -261,7 +242,7 @@ export default function Dashboard() {
       if (data) {
         setIsMeetingModalOpen(true);
       } else {
-        
+
         setIsAuthModalOpen(true);
         // navigate('/login')
       }
@@ -270,18 +251,19 @@ export default function Dashboard() {
       setIsAuthModalOpen(true);
     }
   };
-  
+
 
 
 
 
   return (
     <RandomImageBackground images={BACKGROUND_IMAGES} isFocused={isFocused} >
-      <MeetingTypeModal
+      <SessionCreationFlow
         isOpen={isMeetingModalOpen}
-        onSelect={handleMeetingSelect}
         onClose={() => setIsMeetingModalOpen(false)}
+        onSubmit={handleSessionFinalSubmit}
       />
+
       <AccessDevice
         isOpen={isAccessModalOpen}
         onSelect={handleAccessSelect}
@@ -304,7 +286,7 @@ export default function Dashboard() {
               "امکان مدیریت جلسات",
               'ایجاد جلسات با بهترین کیفیت',
               'امکان ایجاد لینک خصوصی',
-              'ارسال کد جلسه از طریق پیامک'
+              'ارسال لینک جلسه از طریق پیامک'
             ]}
             delay={50}
             deleteSpeed={30}
@@ -358,7 +340,7 @@ export default function Dashboard() {
             <span className="text-nowrap">پیوستن به جلسه</span>
           </NavLink> */}
 
-{/* 
+          {/* 
           <button
             onClick={handleMeetingSetup}
             disabled={isProcessing}
@@ -379,7 +361,7 @@ export default function Dashboard() {
             className={`w-full text-center px-6 py-3 bg-transparent border border-white text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base 
               ${isAuthLoading ? 'opacity-50 cursor-wait' : 'hover:bg-white hover:text-gray-900'}`}
           >
-            {isAuthLoading ? 'در حال بررسی...' : 'ساخت به جلسه'}
+            {isAuthLoading ? 'در حال بررسی...' : 'ساخت جلسه'}
           </button>
 
           {/* <NavLink

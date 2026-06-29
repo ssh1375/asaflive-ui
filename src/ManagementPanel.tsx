@@ -96,8 +96,9 @@ export default function ManagementPanel() {
             await api.post("/auth/logout").then(() => {
               toast.success("خروج با موفقیت انجام شد")
               navigate("/login")
-            }).catch(() => {
-              toast.error(".لطفا در سامانه ثبت نام نمایید")
+            }).catch((err) => {
+              console.log(err);
+              err?.businessStatus==502?toast.error("ارتباط با سرویس دهنده قطع شده"):toast.error(".لطفا در سامانه ثبت نام نمایید")
             })
           }} className="w-full py-3 text-center text-xl text-white hover:bg-blue-500/20 rounded-lg transition-colors !cursor-pointer">
             خروج
@@ -124,6 +125,7 @@ export default function ManagementPanel() {
         </header><main dir="rtl" className="flex-1 overflow-auto">
           <Outlet />
         </main>
+        
       </div>
 
       <div
@@ -153,11 +155,23 @@ export default function ManagementPanel() {
               </div>
               <span className="font-kalameh-Regular">رضا فروغ نیا</span>
             </div>
+            
           </div>
           <div className="border-2 border-blue-500 w-full rounded-2xl" />
           <nav className="flex flex-col gap-2 items-center" aria-label="ناوبری موبایل">
             {renderLinks(() => setMobileOpen(false), "w-6 h-6", "text-base")}
           </nav>
+           <button onClick={async () => {
+            await api.post("/auth/logout").then(() => {
+              toast.success("خروج با موفقیت انجام شد")
+              navigate("/login")
+            }).catch((err) => {
+              console.log(err);
+              err?.businessStatus==502?toast.error("ارتباط با سرویس دهنده قطع شده"):toast.error(".لطفا در سامانه ثبت نام نمایید")
+            })
+          }} className="w-full py-3 text-center text-xl text-white hover:bg-blue-500/20 rounded-lg transition-colors !cursor-pointer">
+            خروج
+          </button>
         </div>
       </aside>
     </div>

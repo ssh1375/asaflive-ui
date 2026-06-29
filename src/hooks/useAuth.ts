@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useUIStore } from "../store/useUIStore";
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export function useAuth() {
   const openAuthModal = useUIStore((state) => state.openAuthModal);
@@ -17,13 +18,13 @@ export function useAuth() {
         if (!response.data || Object.keys(response.data).length === 0) {
           return null;
         }
-        
-        
+
+
         return response.data;
-      } catch(err) {
-        console.log(err);
+      } catch (err) {
+        err?.businessStatus == 502 ? toast.error("ارتباط با سرویس دهنده قطع شده") : toast.error(".خطا در استعلام کاربری شما")
         
-        if(err?.status=="401"){
+        if (err?.status == "401") {
           navigate("/login")
         }
         return null;

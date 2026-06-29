@@ -18,6 +18,7 @@ export default function TextInput({
     <div className="flex flex-col">
       <input
         {...props}
+        
         onChange={(e) => onValueChange?.(toEnglishDigits(e.target.value))}
         aria-invalid={!!error}
         className={`bg-gray-700 text-white text-sm px-3 py-2 rounded outline-none
