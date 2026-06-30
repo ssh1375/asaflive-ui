@@ -6,6 +6,7 @@ import { useChatStore } from '../controls/ChatStore';
 
 type ChatPageProps = {
     users: User[];
+    
 };
 
 const ChatPage: React.FC<ChatPageProps> = ({ users }) => {

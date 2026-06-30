@@ -6,6 +6,7 @@ import {
   type SessionData,
   type SelectedMeetingType,
 } from '../hooks/useSessionFlow';
+import { sessionData } from '../hooks/validation/create-session-validation';
 
 type SessionCreationFlowProps = {
   isOpen: boolean;
@@ -21,44 +22,44 @@ const meetingTypes: {
   description: string;
   icon: React.ReactNode;
 }[] = [
-  {
-    key: 'khesarat',
-    title: 'خسارت حمل و نقل',
-    description: 'بررسی و مدیریت خسارت‌های وارده',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-zinc-400 group-hover:text-blue-400 transition-colors duration-300">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-    ),
-  },
-  {
-    key: 'beforeKhesarat',
-    title: 'بازدید',
-    description: 'پیش‌بینی و پیشگیری از خسارت‌های احتمالی',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-zinc-400 group-hover:text-blue-400 transition-colors duration-300">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    key: 'dorehami',
-    title: 'جلسه دور همی',
-    description: 'گفت‌وگوی دوستانه و هماهنگی تیم',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-zinc-400 group-hover:text-blue-400 transition-colors duration-300">
-        <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-        <line x1="6" y1="2" x2="6" y2="4" />
-        <line x1="10" y1="2" x2="10" y2="4" />
-        <line x1="14" y1="2" x2="14" y2="4" />
-      </svg>
-    ),
-  },
-];
+    {
+      key: 'khesarat',
+      title: 'خسارت حمل و نقل',
+      description: 'بررسی و مدیریت خسارت‌های وارده',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-zinc-400 group-hover:text-blue-400 transition-colors duration-300">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      ),
+    },
+    {
+      key: 'beforeKhesarat',
+      title: 'بازدید',
+      description: 'پیش‌بینی و پیشگیری از خسارت‌های احتمالی',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-zinc-400 group-hover:text-blue-400 transition-colors duration-300">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+      ),
+    },
+    {
+      key: 'dorehami',
+      title: 'جلسه دور همی',
+      description: 'گفت‌وگوی دوستانه و هماهنگی تیم',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-zinc-400 group-hover:text-blue-400 transition-colors duration-300">
+          <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+          <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+          <line x1="6" y1="2" x2="6" y2="4" />
+          <line x1="10" y1="2" x2="10" y2="4" />
+          <line x1="14" y1="2" x2="14" y2="4" />
+        </svg>
+      ),
+    },
+  ];
 
 const typeNames: Record<SelectedMeetingType, string> = {
   khesarat: 'خسارت حمل و نقل',
@@ -81,6 +82,7 @@ function MetadataForm({
 }) {
   const typeName = typeNames[selectedType];
   const fallbackName = `${typeName} ${Date.now().toString().slice(-4)}`;
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState<SessionData>(defaultData);
 
@@ -96,9 +98,28 @@ function MetadataForm({
     const finalData: SessionData = {
       ...form,
       name: form.name.trim() || fallbackName,
-      metadata: { ...form.metadata, meetingType: selectedType },
+      metadata: { ...form.metadata, type: selectedType },
     };
+    console.log(form);
+
+    const result = sessionData.safeParse(finalData);
+    if (!result.success) {
+
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const key = issue.path[0]?.toString();
+        if (key && !fieldErrors[key]) {
+          fieldErrors[key] = issue.message;
+        }
+      }
+      console.log(fieldErrors);
+
+      setErrors(fieldErrors);
+      return;
+    }
+    setErrors({});
     onSubmit(finalData);
+
   };
 
   return (
@@ -120,29 +141,34 @@ function MetadataForm({
       <div className="space-y-4">
         <div>
           <label className="block text-zinc-300 text-sm font-semibold mb-1.5">
-            نام جلسه <span className="text-zinc-500 font-normal">(اختیاری)</span>
+            نام جلسه
           </label>
           <input
             type="text"
             value={form.name}
             onChange={(e) => update('name', e.target.value)}
-            placeholder={`مثلاً جلسه خسارت شماره ${Date.now().toString().slice(-4)}`}
+            placeholder={`مثلاً جلسه خسارت قرارداد 20053`}
+            required
             className={inputClass}
           />
+          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-zinc-300 text-sm font-semibold mb-1.5">
-              زمان خالی (ثانیه)
+              زمان خالی (دقیقه)
             </label>
             <input
               type="number"
               value={form.emptyTimeout}
+              placeholder='زمان بین ۱ تا ۵ دقیقه'
               onChange={(e) => update('emptyTimeout', Number(e.target.value))}
-              min={10}
+              max={5}
+              min={1}
               className={inputClass}
             />
+            {errors.emptyTimeout && <p className="text-red-500 text-sm">{errors.emptyTimeout}</p>}
           </div>
           <div>
             <label className="block text-zinc-300 text-sm font-semibold mb-1.5">
@@ -153,24 +179,52 @@ function MetadataForm({
               value={form.maxParticipants}
               onChange={(e) => update('maxParticipants', Number(e.target.value))}
               min={1}
+              max={20}
               className={inputClass}
             />
+            {errors.maxParticipants && <p className="text-red-500 text-sm">{errors.maxParticipants}</p>}
+
           </div>
         </div>
 
         <div>
-          <label className="block text-zinc-300 text-sm font-semibold mb-1.5">
-            انقضای نشست (میلی‌ثانیه)
+          <label className="block text-zinc-300 text-sm font-semibold mb-2">
+            انقضای نشست
           </label>
-          <input
-            type="number"
-            value={form.sessionExpiry}
-            onChange={(e) => update('sessionExpiry', Number(e.target.value))}
-            min={1000}
-            step={1000}
-            className={inputClass}
-          />
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {[
+              { label: 'نیم ساعت', value: 1800 },
+              { label: 'چهل و پنج دقیقه', value: 2700 },
+              { label: 'یک ساعت', value: 3600 },
+              { label: 'یک ساعت و نیم', value: 5400 },
+              { label: 'دو ساعت', value: 7200 },
+            ].map((opt) => {
+              const active = form.sessionExpiry === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  className={`cursor-pointer text-center px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all active:scale-[0.97] ${active
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/20'
+                    : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-300 hover:border-blue-500/40 hover:bg-zinc-800/80'
+                    }`}
+                >
+                  <input
+                    type="radio"
+                    name="sessionExpiry"
+                    value={opt.value}
+                    checked={active}
+                    onChange={() => update('sessionExpiry', opt.value)}
+                    className="sr-only"
+                  />
+                  {opt.label}
+                </label>
+              );
+            })}
+
+          </div>
+          {errors.sessionExpiry && <p className="text-red-500 text-sm mt-1">{errors.sessionExpiry}</p>}
         </div>
+
       </div>
 
       <div className="flex gap-3">
@@ -220,9 +274,9 @@ function TypeSelection({
           <button
             key={type.key}
             onClick={() => {
-                console.log(type.key);
-                
-                onSelect(type.key)
+              console.log(type.key);
+
+              onSelect(type.key)
             }}
             className="group flex items-center gap-4 p-3.5 cursor-pointer rounded-2xl bg-zinc-800/40 border border-zinc-700/40 hover:border-blue-500/40 hover:bg-zinc-800/80 hover:shadow-lg hover:shadow-blue-900/10 transition-all duration-300 text-right active:scale-[0.98]"
           >

@@ -9,6 +9,15 @@ import { useChatStore } from '../controls/ChatStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from '../../hooks/useMediaQuery.js';
 import { initFakeBackend } from '../../services/FakeBackend.js';
+import MediaTestEnvironment from '../lobby/MediaTester.js';
+import Modal from '../../shared/Modal.js';
+import { useDeviceType } from '../../hooks/useDeviceType.js';
+import MobileMediaTester from '../lobby/MobileMediaTester.js';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { MemberForm, type MemberFormData } from '../../shared/MemberForm.js';
+
+
 const mockUsers: User[] = [
     { id: '1', name: 'علی رضایی', hasVideo: false, isMuted: true, isSpeaking: false },
     { id: '2', name: 'رضا فروغ نیا (شما)', hasVideo: true, isMuted: false, isSpeaking: true },
@@ -34,7 +43,12 @@ const Main: React.FC = () => {
     const setCurrentUser = useChatStore(state => state.setCurrentUser);
     const initSocket = useChatStore(state => state.initSocket);
 
+    const [isMediaTestOpen, setIsMediaTestOpen] = useState(false);
+    const deviceType = useDeviceType();
     const isDesktop = useMediaQuery('(min-width: 768px)');
+    const navigate = useNavigate();
+    const [inviteUser, setInviteUser] = useState(false);
+
     useEffect(() => {
         initFakeBackend();
         initSocket();
@@ -45,7 +59,11 @@ const Main: React.FC = () => {
         initFakeBackend(mockUsers);
         initSocket();
     }, []);
-
+    useEffect(() => setIsMediaTestOpen(true), [])
+    const handleSubmit = (data: MemberFormData) => {
+        // onAddUser?.(data);     
+        setInviteUser(false);
+    };
     return (
         <div className="flex h-screen w-full bg-[rgb(var(--bg))] text-[rgb(var(--bg))] overflow-hidden font-sans relative">
 
@@ -55,6 +73,35 @@ const Main: React.FC = () => {
 
                 <div className="w-full bg-[rgb(var(--bg))]/20 backdrop-blur-sm px-1">
                     <UserSlider users={mockUsers} />
+                    {/* دکمه شناور افزودن کاربر */}
+                    <motion.button
+                        onClick={() => setInviteUser(true)}
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.92 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        aria-label="افزودن کاربر"
+                        title="افزودن کاربر"
+
+                        className="absolute top-20 right-4 z-40 w-12 h-12 flex items-center justify-center
+               rounded-full bg-blue-600 hover:bg-blue-700 text-white
+               shadow-lg shadow-blue-600/30 transition-colors"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="22" height="22" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" strokeWidth="2"
+                            strokeLinecap="round" strokeLinejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <line x1="19" y1="8" x2="19" y2="14" />
+                            <line x1="22" y1="11" x2="16" y2="11" />
+                        </svg>
+                    </motion.button>
+
                 </div>
 
                 <div className="flex-1 relative bottom-5 w-full h-20  md:pb-0 flex items-center justify-center  overflow-hidden">
@@ -88,7 +135,16 @@ const Main: React.FC = () => {
                     >
                         کاربران
                     </button>
-                    <button className="bg-red-600 hover:bg-red-700 px-3 py-1 md:px-4 md:py-1 rounded-md font-bold text-sm md:text-base ml-auto md:ml-0">پایان</button>
+                    <button onClick={() => {
+                        toast.success("جلسه با موفقیت خاتمه یافت")
+                        navigate("/")
+                    }} className="bg-red-600 hover:bg-red-700 px-3 py-1 md:px-4 md:py-1 rounded-md font-bold text-sm md:text-base ml-auto md:ml-0">پایان</button>
+                    <button
+                        onClick={() => setIsMediaTestOpen(true)}
+                        className="text-blue-500 p-2 text-sm md:text-base rounded-lg transition hover:bg-[rgb(var(--bg-secondary))]-700"
+                    >
+                        تست دستگاه
+                    </button>
                     {/* <ThemeSwitcher /> */}
 
                 </div>
@@ -141,7 +197,21 @@ const Main: React.FC = () => {
                     </motion.aside>
                 )}
             </AnimatePresence>
-
+            <Modal isOpen={isMediaTestOpen} onClose={() => setIsMediaTestOpen(false)}>
+                {deviceType === 'mobile'
+                    ? <MobileMediaTester />
+                    : <MediaTestEnvironment />
+                }
+            </Modal>
+            <Modal
+                isOpen={inviteUser}
+                onClose={() => setIsMediaTestOpen(false)}
+            >
+                <MemberForm
+                    onSubmit={handleSubmit}
+                    
+                />
+            </Modal>
         </div>
     );
 };

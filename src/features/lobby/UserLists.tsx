@@ -1,19 +1,23 @@
-import React from 'react';
-import type { User } from '../chat/type'; 
+import React, { useState } from 'react';
+import type { User } from '../chat/type';
+import Modal from '../../shared/Modal';
 
 type UserListProps = {
   users: User[];
   selectedUser: User | null;
   onSelectUser: (user: User | null) => void;
+ 
 };
-
 const UserList: React.FC<UserListProps> = ({
   users,
   selectedUser,
   onSelectUser,
 }) => {
+  
+   
   return (
     <div className="h-max bg-zinc-900 border-l border-zinc-800 p-4 ">
+       
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-zinc-100 font-bold text-sm">لیست کاربران</h2>
 
@@ -28,10 +32,10 @@ const UserList: React.FC<UserListProps> = ({
           چت عمومی
         </button> */}
         <button
-          // onClick={() => onSelectUser(null)}
+          // onClick={() => setIsMediaTestOpen(true)}
           className={`text-xs px-3 py-1.5 rounded-lg transition bg-blue-600 text-white`}
         >
-          افزودن کاربر+ 
+          افزودن کاربر+
         </button>
       </div>
 
@@ -43,11 +47,10 @@ const UserList: React.FC<UserListProps> = ({
             <button
               key={user.id}
               onClick={() => onSelectUser(user)}
-              className={`w-full text-right px-3 py-3 rounded-xl border transition-all ${
-                isActive
-                  ? 'bg-blue-600/20 border-blue-500 text-blue-300'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700'
-              }`}
+              className={`w-full text-right px-3 py-3 rounded-xl border transition-all ${isActive
+                ? 'bg-blue-600/20 border-blue-500 text-blue-300'
+                : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700'
+                }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -56,8 +59,8 @@ const UserList: React.FC<UserListProps> = ({
                     {user.isSpeaking
                       ? 'در حال صحبت'
                       : user.isMuted
-                      ? 'میکروفون خاموش'
-                      : 'آنلاین'}
+                        ? 'میکروفون خاموش'
+                        : 'آنلاین'}
                   </div>
                 </div>
 
@@ -66,9 +69,8 @@ const UserList: React.FC<UserListProps> = ({
                     {user.name.charAt(0)}
                   </div>
                   <span
-                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-zinc-900 ${
-                      user.isSpeaking ? 'bg-green-400' : 'bg-zinc-500'
-                    }`}
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-zinc-900 ${user.isSpeaking ? 'bg-green-400' : 'bg-zinc-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -76,6 +78,7 @@ const UserList: React.FC<UserListProps> = ({
           );
         })}
       </div>
+
     </div>
   );
 };

@@ -11,6 +11,8 @@ import AuthModal from "../AuthModal.js";
 import { useUIStore } from "../store/useUIStore.js";
 import type { SelectedMeetingType, SessionData } from "../hooks/useSessionFlow.js";
 import SessionCreationFlow from "../shared/SessionCreationFlow.js";
+import api from "../api/api.js";
+import toast from "react-hot-toast";
 
 type TypewriterProps = {
   text?: string[];
@@ -211,23 +213,29 @@ export default function Dashboard() {
   const { withAuthGuard } = useAuth();
   const isMobile = (navigator as any).userAgentData?.mobile ?? false;
 
-  const handleSessionFinalSubmit = (
-    data: SessionData,
-    type: SelectedMeetingType
-  ) => {
+  const handleSessionFinalSubmit = async (
+  data: SessionData,
+  type: SelectedMeetingType
+) => {
+  try {
+    await api.post('/session-manager/new-session', {...data, emptyTimeout: data.emptyTimeout *60});
+    toast.success("جلسه ساخته شد");
+    navigate("/session");
+  } catch (error) {
+    console.error("خطا", error);
+    toast.error("خطا در ساخت جلسه");
+  } finally {
     setIsMeetingModalOpen(false);
-    console.log("آبجکت نهایی جلسه:", data, "نوع:", type);
-    navigate("/session/testDevice", {
-      state: { sessionInfo: data, meetingType: type },
-    });
-  };
+  }
+};
+
 
   const handleAccessSelect = (type: MediaDeviceType) => {
     setActiveDevice(type);
     setIsAccessModalOpen(false);
     console.log("سخت‌افزار انتخاب‌شده:", type);
   };
- 
+
   const handleProtectedMeetingAction = async () => {
     withAuthGuard(() => {
       setIsMeetingModalOpen(true);

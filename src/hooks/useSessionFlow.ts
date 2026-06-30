@@ -22,8 +22,8 @@ export interface SessionData {
 
 const DEFAULT_SESSION_DATA: SessionData = {
   name: '',
-  emptyTimeout: 600,
-  sessionExpiry: 15000,
+  emptyTimeout: 5,
+  sessionExpiry: 600,
   maxParticipants: 15,
   metadata: {},
 };
