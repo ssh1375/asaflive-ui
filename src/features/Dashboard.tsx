@@ -214,20 +214,26 @@ export default function Dashboard() {
   const isMobile = (navigator as any).userAgentData?.mobile ?? false;
 
   const handleSessionFinalSubmit = async (
-  data: SessionData,
-  type: SelectedMeetingType
-) => {
-  try {
-    await api.post('/session-manager/new-session', {...data, emptyTimeout: data.emptyTimeout *60});
-    toast.success("جلسه ساخته شد");
-    navigate("/session");
-  } catch (error) {
-    console.error("خطا", error);
-    toast.error("خطا در ساخت جلسه");
-  } finally {
-    setIsMeetingModalOpen(false);
-  }
-};
+    data: SessionData,
+    type: SelectedMeetingType
+  ) => {
+    try {
+      const res = await api.post('/session-manager/new-session', {
+        ...data,
+        emptyTimeout: data.emptyTimeout * 60,
+      });
+
+      const meetingId = res.data.meeting.id;
+
+      toast.success("جلسه ساخته شد");
+      navigate(`/session/${meetingId}`);
+    } catch (error) {
+      console.error("خطا", error);
+      toast.error("خطا در ساخت جلسه");
+    } finally {
+      setIsMeetingModalOpen(false);
+    }
+  };
 
 
   const handleAccessSelect = (type: MediaDeviceType) => {

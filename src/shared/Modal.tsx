@@ -34,7 +34,7 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
           >
             <button
               onClick={onClose}
-              className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800/80 hover:bg-gray-700 text-white text-lg"
+              className="absolute top-3 right-3  z-20 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800/80 hover:bg-gray-700 text-white text-lg"
               aria-label="بستن"
             >
               ✕

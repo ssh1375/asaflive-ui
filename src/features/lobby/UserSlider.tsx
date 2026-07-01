@@ -4,13 +4,14 @@ export interface User {
     id: string;
     name: string;
     hasVideo: boolean;
-    videoUrl?: string;
+    videoUrl?: string; // deprecated - LiveKit manages this
     isMuted: boolean;
     isSpeaking: boolean;
 }
 
 interface UserSliderProps {
     users: User[];
+    videoElementsMap?: React.RefObject<Map<string, HTMLVideoElement>>;
 }
 
 const AVATAR_COLORS = [
@@ -22,7 +23,7 @@ const AVATAR_COLORS = [
     'from-violet-600 to-violet-800',
 ];
 
-const UserSlider: React.FC<UserSliderProps> = ({ users }) => {
+const UserSlider: React.FC<UserSliderProps> = ({ users, videoElementsMap }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [canLeft, setCanLeft] = useState(false);
     const [canRight, setCanRight] = useState(false);
@@ -33,6 +34,18 @@ const UserSlider: React.FC<UserSliderProps> = ({ users }) => {
         setCanLeft(el.scrollLeft > 8);
         setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
     }, []);
+    useEffect(() => {
+        users.forEach(user => {
+            if (!user.hasVideo) return;
+            const container = document.getElementById(`video-container-${user.id}`);
+            if (!container) return;
+
+            const videoEl = videoElementsMap?.current?.get(user.id);
+            if (videoEl && !container.contains(videoEl)) {
+                container.appendChild(videoEl);
+            }
+        });
+    }, [users, videoElementsMap]);
 
     useEffect(() => {
         updateArrows();
@@ -42,7 +55,7 @@ const UserSlider: React.FC<UserSliderProps> = ({ users }) => {
         scrollRef.current?.scrollBy({ left: dir === 'right' ? 200 : -200, behavior: 'smooth' });
         setTimeout(updateArrows, 350);
     };
-
+    
     return (
         <div className="relative w-full flex items-center justify-center">
             <button
@@ -57,7 +70,7 @@ const UserSlider: React.FC<UserSliderProps> = ({ users }) => {
             <div
                 ref={scrollRef}
                 onScroll={updateArrows}
-                className="w-full flex gap-2 overflow-x-auto snap-x  snap-mandatory py-2 px-1"
+                className="w-full flex gap-2 overflow-x-auto snap-x snap-mandatory py-2 px-1"
                 style={{ scrollbarWidth: 'none' }}
             >
                 {users.map((user, i) => (
@@ -79,11 +92,13 @@ const UserSlider: React.FC<UserSliderProps> = ({ users }) => {
                         )}
 
                         {user.hasVideo ? (
-                            <video
-                                src={user.videoUrl}
-                                autoPlay muted
-                                className="w-full h-full object-cover"
-                            />
+                            // ✅ LiveKit inject می‌کند video element را در این div
+                            <div 
+                                id={`video-container-${user.id}`}
+                                className="w-full h-full"
+                            >
+                                {/* video element توسط LiveKit به صورت خودکار اضافه می‌شود */}
+                            </div>
                         ) : (
                             <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
                                 <span className="text-white text-2xl sm:text-3xl font-bold drop-shadow">
@@ -92,7 +107,7 @@ const UserSlider: React.FC<UserSliderProps> = ({ users }) => {
                             </div>
                         )}
 
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-4 pb-1 px-1.5 flex items-center justify-between gap-1">
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-4 pb-1 px-1.5 flex items-center justify-between gap-1 z-20">
                             <span className="text-white text-[10px] sm:text-xs truncate flex-1 text-right">
                                 {user.name}
                             </span>

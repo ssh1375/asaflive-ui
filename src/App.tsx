@@ -5,10 +5,8 @@ import ManagementPanel from "./ManagementPanel";
 import DefineUser from "./DefineUser";
 import OriginDefineUser from "./OriginDefineUser.tsx";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 const Dashboard = lazy(() => import("./features/Dashboard"));
-const MediaTester = lazy(() => import("./features/lobby/MediaTester"));
-const MobileMediaTester = lazy(() => import("./features/lobby/MobileMediaTester.tsx"));
 const Main = lazy(() => import("./features/meeting/Main"));
 const AuthModal=lazy(()=>import("./AuthModal.tsx"))
 
@@ -51,9 +49,8 @@ function App() {
 
           <Route path="/session" >
             <Route index element={<Main />} />
-            <Route path="testDevice" element={<MediaTester />} />
-            <Route path="testMobileDevice" element={<MobileMediaTester />} />
-
+            <Route path=":id" element={<Main />} />
+            <Route path="guest" element={<Main />} />
           </Route>
           <Route path="/*" element={<Navigate to="/" replace />} />
         </Routes>
