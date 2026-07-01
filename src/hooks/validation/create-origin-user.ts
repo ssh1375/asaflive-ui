@@ -26,4 +26,6 @@ export const userSchema = z.object({
     .min(8, { message: "رمز عبور باید حداقل ۸ کاراکتر باشد" }),
 });
 
+// export type UserData = z.infer<typeof userSchema>;
 export type UserData = z.infer<typeof userSchema>;
+

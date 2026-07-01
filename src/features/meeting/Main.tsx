@@ -183,10 +183,9 @@ import {
   Track,
   RemoteTrack,
   RemoteParticipant,
-  LocalParticipant,
-  Participant,
 } from 'livekit-client';
-import Modal from '../../shared/Modal';
+import Modal from '../../shared/Modal.js';
+import { MemberForm } from '../../shared/MemberForm.js';
 
 interface User {
   id: string;
@@ -196,14 +195,14 @@ interface User {
   isSpeaking: boolean;
 }
 
-const AVATAR_COLORS = [
-  'from-indigo-600 to-indigo-800',
-  'from-cyan-600 to-cyan-800',
-  'from-emerald-600 to-emerald-800',
-  'from-amber-600 to-amber-800',
-  'from-pink-600 to-pink-800',
-  'from-violet-600 to-violet-800',
-];
+// const AVATAR_COLORS = [
+//   'from-indigo-600 to-indigo-800',
+//   'from-cyan-600 to-cyan-800',
+//   'from-emerald-600 to-emerald-800',
+//   'from-amber-600 to-amber-800',
+//   'from-pink-600 to-pink-800',
+//   'from-violet-600 to-violet-800',
+// ];
 
 const Main: React.FC = () => {
   const roomRef = useRef<Room | null>(null);
@@ -275,7 +274,10 @@ const Main: React.FC = () => {
 
   const attachTrack = useCallback((track: RemoteTrack | MediaStreamTrack, participantId: string) => {
     const container = document.getElementById(`video-container-${participantId}`);
-    if (!container) return;
+    if (!container) {
+      console.warn(`⚠️ کانتینر ${participantId} پیدا نشد`);
+      return;
+    }
 
     let element: HTMLVideoElement | HTMLAudioElement;
     if (track.kind === 'video') {
@@ -284,16 +286,19 @@ const Main: React.FC = () => {
         (element as HTMLVideoElement).srcObject = new MediaStream([track]);
         (element as HTMLVideoElement).autoplay = true;
         (element as HTMLVideoElement).playsInline = true;
+        (element as HTMLVideoElement).muted = false;
       }
       element.style.width = '100%';
       element.style.height = '100%';
       element.style.objectFit = 'cover';
+      console.log(`✅ ویدیو ${participantId} متصل شد`);
     } else {
       element = track instanceof RemoteTrack ? track.attach() : document.createElement('audio');
       if (!(track instanceof RemoteTrack) && track instanceof MediaStreamTrack) {
         (element as HTMLAudioElement).srcObject = new MediaStream([track]);
         (element as HTMLAudioElement).autoplay = true;
       }
+      console.log(`✅ صدای ${participantId} متصل شد`);
     }
 
     container.innerHTML = '';
@@ -313,66 +318,127 @@ const Main: React.FC = () => {
     const room = new Room();
     roomRef.current = room;
 
-    room.on(RoomEvent.Connected, () => {
-      setConnected(true);
-      buildUserList();
+   room.on(RoomEvent.Connected, async () => {
+  console.log('Connected to room');
+  setConnected(true);
 
-      room.localParticipant.videoTrackPublications.forEach((pub) => {
-        if (pub.track) {
-          attachTrack(pub.track.mediaStreamTrack, room.localParticipant.identity);
-        }
-      });
+  // ✅ صبر تا Room کاملاً ready بشه
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // فعال‌سازی با Try-Catch جداگانه
+  try {
+    await room.localParticipant.setMicrophoneEnabled(true);
+    console.log('✅ Mic OK');
+    setIsMuted(false);
+  } catch (e: any) {
+    console.error('❌ Mic failed:', e.message);
+    setIsMuted(true);
+  }
+
+  // دوربین با تأخیر بیشتر
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  try {
+    // اجبار به رزولوشن پایین
+    await room.localParticipant.setCameraEnabled(true, {
+      resolution: { width: 640, height: 480 }
     });
+    console.log('✅ Camera OK');
+    setIsCameraOff(false);
+  } catch (e: any) {
+    console.error('❌ Camera failed:', e.name, e.message);
+    setIsCameraOff(true);
+    
+    // تلاش دوم با کیفیت پایین‌تر
+    try {
+      await room.localParticipant.setCameraEnabled(true, {
+        resolution: { width: 320, height: 240 }
+      });
+      console.log('✅ Camera OK (low res)');
+      setIsCameraOff(false);
+    } catch (e2: any) {
+      console.error('❌ Camera totally failed');
+      setError('دوربین غیرفعال است');
+    }
+  }
+
+  buildUserList();
+});
+
 
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
+      console.log(`📥 Track دریافت شد از ${participant.identity}:`, track.kind);
       if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {
-        attachTrack(track, participant.identity);
+        setTimeout(() => {
+          attachTrack(track, participant.identity);
+        }, 50);
       }
       buildUserList();
     });
 
     room.on(RoomEvent.TrackUnsubscribed, (_track, _pub, participant: RemoteParticipant) => {
+      console.log(`📤 Track قطع شد از ${participant.identity}`);
       const container = document.getElementById(`video-container-${participant.identity}`);
       if (container) container.innerHTML = '';
       buildUserList();
     });
 
-    room.on(RoomEvent.ParticipantConnected, buildUserList);
-    room.on(RoomEvent.ParticipantDisconnected, buildUserList);
+    room.on(RoomEvent.ParticipantConnected, (participant) => {
+      console.log(`👤 کاربر جدید: ${participant.identity}`);
+      buildUserList();
+    });
+
+    room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      console.log(`👋 کاربر خارج شد: ${participant.identity}`);
+      buildUserList();
+    });
+
     room.on(RoomEvent.TrackMuted, buildUserList);
     room.on(RoomEvent.TrackUnmuted, buildUserList);
     room.on(RoomEvent.ActiveSpeakersChanged, buildUserList);
 
     room.on(RoomEvent.Disconnected, () => {
+      console.log('🔴 اتصال قطع شد');
       setConnected(false);
       setError('ارتباط قطع شد');
     });
 
+    console.log(`🔗 در حال اتصال به ${url}...`);
     room
       .connect(url, token)
-      .then(() => room.localParticipant.enableCameraAndMicrophone())
       .catch((err) => {
-        console.error('خطا در اتصال:', err);
+        console.error('❌ خطا در اتصال به room:', err);
         setError(`خطا در اتصال: ${err.message}`);
       });
 
     return () => {
+      console.log('🧹 cleanup: قطع اتصال');
       room.disconnect();
     };
   }, [buildUserList, attachTrack]);
 
-  const toggleMute = () => {
+  // ✅ اصلاح شده
+  const toggleMute = async () => {
     const room = roomRef.current;
     if (!room) return;
-    room.localParticipant.setMicrophoneEnabled(isMuted);
-    setIsMuted(!isMuted);
+    
+    const newMuteState = !isMuted;
+    await room.localParticipant.setMicrophoneEnabled(!newMuteState);
+    setIsMuted(newMuteState);
+    console.log(`🎤 میکروفون: ${newMuteState ? 'خاموش' : 'روشن'}`);
   };
 
-  const toggleCamera = () => {
+  // ✅ اصلاح شده
+  const toggleCamera = async () => {
     const room = roomRef.current;
     if (!room) return;
-    room.localParticipant.setCameraEnabled(isCameraOff);
-    setIsCameraOff(!isCameraOff);
+
+    const newCameraState = !isCameraOff;
+    await room.localParticipant.setCameraEnabled(!newCameraState);
+    setIsCameraOff(newCameraState);
+    console.log(`📹 دوربین: ${newCameraState ? 'خاموش' : 'روشن'}`);
+    
+    setTimeout(buildUserList, 100);
   };
 
   const leaveCall = () => {
@@ -380,6 +446,9 @@ const Main: React.FC = () => {
     window.location.href = '/';
   };
 
+  const handleSubmit = () => {
+        setInviteUser(false);
+    };
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', background: '#09090b', color: '#fff', fontFamily: 'sans-serif' }}>
       
@@ -496,7 +565,7 @@ const Main: React.FC = () => {
               scrollbarWidth: 'none',
             }}
           >
-            {users.map((user, i) => (
+            {users.map((user, _) => (
               <div
                 key={user.id}
                 style={{
@@ -511,6 +580,7 @@ const Main: React.FC = () => {
                   boxShadow: user.isSpeaking ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)' : 'none',
                   transition: 'all 0.3s',
                   cursor: 'pointer',
+                  background: '#18181b',
                 }}
               >
                 {user.isSpeaking && (
@@ -528,7 +598,7 @@ const Main: React.FC = () => {
                 )}
 
                 {user.hasVideo ? (
-                  <div id={`video-container-${user.id}`} style={{ width: '100%', height: '100%' }} />
+                  <div id={`video-container-${user.id}`} style={{ width: '100%', height: '100%', background: '#000' }} />
                 ) : (
                   <div
                     style={{
@@ -537,7 +607,7 @@ const Main: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: `linear-gradient(to bottom right, ${AVATAR_COLORS[i % AVATAR_COLORS.length].split(' ')[0].replace('from-', '#')}, ${AVATAR_COLORS[i % AVATAR_COLORS.length].split(' ')[1].replace('to-', '#')})`,
+                      background: `linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)`,
                     }}
                   >
                     <span style={{ color: '#fff', fontSize: '32px', fontWeight: 'bold' }}>
@@ -626,7 +696,7 @@ const Main: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-          {users.map((user, i) => {
+          {users.map((user, _) => {
             const isActive = selectedUser?.id === user.id;
             return (
               <button
@@ -692,50 +762,22 @@ const Main: React.FC = () => {
         </div>
       </div>
 
-      {inviteUser && (
-        <Modal onClose={() => setInviteUser(false)}>
-          <div style={{ padding: '24px', background: '#18181b', borderRadius: '12px', minWidth: '400px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>افزودن کاربر جدید</h3>
-            <input
-              type="text"
-              placeholder="نام کاربر"
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: '1px solid #3f3f46',
-                background: '#27272a',
-                color: '#fff',
-                marginBottom: '12px',
-              }}
-            />
-            <button
-              onClick={() => setInviteUser(false)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#2563eb',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              دعوت
-            </button>
-          </div>
-        </Modal>
-      )}
+     
+       <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
+                 <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
+            </Modal>
+      
 
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
         }
+        div::-webkit-scrollbar { width: 0; height: 0; }
       `}</style>
     </div>
   );
 };
 
 export default Main;
+

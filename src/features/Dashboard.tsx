@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
-import Input from "../shared/Input";
-import LiveMonitor from "./meeting/LiveMonitor";
-import MeetingTypeModal from "../shared/MeetingTypeModal";
+
 import AccessDevice, { type MediaDeviceType } from '../shared/AccessDevice';
-import { useMeetingHardware } from '../hooks/useMeetingHardware.js';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import AuthModal from "../AuthModal.js";
 import { useUIStore } from "../store/useUIStore.js";
-import type { SelectedMeetingType, SessionData } from "../hooks/useSessionFlow.js";
+import type { SessionData } from "../hooks/useSessionFlow.js";
 import SessionCreationFlow from "../shared/SessionCreationFlow.js";
 import api from "../api/api.js";
 import toast from "react-hot-toast";
@@ -151,13 +147,13 @@ type RandomImageBackgroundProps = {
   images: string[];
   children?: React.ReactNode;
   overlayClassName?: string;
-  isFocused?: boolean;
+  // isFocused?: boolean;
 };
 
 export function RandomImageBackground({
   images,
   children,
-  isFocused = false,
+  // isFocused = false,
   overlayClassName = "bg-black/50"
 }: RandomImageBackgroundProps) {
   const [currentImage, setCurrentImage] = useState<string>("");
@@ -175,7 +171,7 @@ export function RandomImageBackground({
         <img
           src={currentImage}
           alt="Background"
-          className={`absolute top-0 left-0 w-full h-full object-cover z-0 transition duration-1000 blur-none ${isFocused && "blur-sm"}`}
+          className={`absolute top-0 left-0 w-full h-full object-cover z-0 transition duration-1000 blur-none `}
         />
       )}
 
@@ -195,8 +191,8 @@ const BACKGROUND_IMAGES = Object.values(modules) as string[];
 
 
 export default function Dashboard() {
-  const [code, setCode] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
+  
+  
 
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -204,18 +200,16 @@ export default function Dashboard() {
 
   const isAuthenticated = useUIStore((s) => s.isAuthenticated);
 
-  const [activeDevice, setActiveDevice] = useState<MediaDeviceType | null>(null);
-  const [selectedMeetingType, setSelectedMeetingType] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
   const { isLoading: isAuthLoading, refetch } = useAuth();
   const { withAuthGuard } = useAuth();
-  const isMobile = (navigator as any).userAgentData?.mobile ?? false;
+  
 
   const handleSessionFinalSubmit = async (
     data: SessionData,
-    type: SelectedMeetingType
+  
   ) => {
     try {
       const res = await api.post('/session-manager/new-session', {
@@ -237,7 +231,7 @@ export default function Dashboard() {
 
 
   const handleAccessSelect = (type: MediaDeviceType) => {
-    setActiveDevice(type);
+    
     setIsAccessModalOpen(false);
     console.log("سخت‌افزار انتخاب‌شده:", type);
   };
@@ -271,7 +265,7 @@ export default function Dashboard() {
 
 
   return (
-    <RandomImageBackground images={BACKGROUND_IMAGES} isFocused={isFocused} >
+    <RandomImageBackground images={BACKGROUND_IMAGES} >
       <SessionCreationFlow
         isOpen={isMeetingModalOpen}
         onClose={() => setIsMeetingModalOpen(false)}

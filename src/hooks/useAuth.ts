@@ -5,6 +5,12 @@ import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+type ApiError = {
+  status?: number;
+  businessStatus?: number;
+  message?: string;
+};
+
 export function useAuth() {
   const openAuthModal = useUIStore((state) => state.openAuthModal);
   const setAuth = useUIStore((state) => state.setAuth);
@@ -15,18 +21,25 @@ export function useAuth() {
     queryFn: async () => {
       try {
         const response = await api.get("/auth/me");
+
         if (!response.data || Object.keys(response.data).length === 0) {
           return null;
         }
 
-
         return response.data;
+
       } catch (err) {
-        err?.businessStatus == 502 ? toast.error("ارتباط با سرویس دهنده قطع شده") : toast.error(".خطا در استعلام کاربری شما")
-        
-        if (err?.status == "401") {
-          navigate("/login")
+
+        const error = err as ApiError;
+
+        error?.businessStatus === 502
+          ? toast.error("ارتباط با سرویس دهنده قطع شده")
+          : toast.error("خطا در استعلام کاربری شما");
+
+        if (error?.status === 401) {
+          navigate("/login");
         }
+
         return null;
       }
     },
@@ -41,10 +54,12 @@ export function useAuth() {
 
   const withAuthGuard = async (action: () => void) => {
     const { data } = await query.refetch();
+
     if (!data) {
       openAuthModal();
       return;
     }
+
     action();
   };
 
@@ -56,3 +71,4 @@ export function useAuth() {
     withAuthGuard,
   };
 }
+

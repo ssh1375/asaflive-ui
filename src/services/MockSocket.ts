@@ -3,7 +3,7 @@ type Callback = (...args: any[]) => void;
 class MockSocket {
   private listeners: Record<string, Callback[]> = {};
   private channel: BroadcastChannel;
-  private isConnected: boolean = false;
+  // private isConnected: boolean = false;
   
 
   public id: string = Math.random().toString(36).substring(2, 10);
@@ -23,7 +23,7 @@ class MockSocket {
 
   connect() {
     setTimeout(() => {
-      this.isConnected = true;
+      // this.isConnected = true;
       this.triggerLocal('connect', undefined);
       console.log(`[MockSocket] Connected with ID: ${this.id}`);
     }, 500); 

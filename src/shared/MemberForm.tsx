@@ -25,7 +25,8 @@ export function MemberForm({ onSubmit, onClose }: MemberFormProps) {
   const [sendMedia, setSendMedia] = useState<string>("yes");
   const [errors, setErrors] = useState<Errors>({});
   const { id } = useParams();
-
+  setReceiveMedia("yes")
+  setSendMedia("yes")
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

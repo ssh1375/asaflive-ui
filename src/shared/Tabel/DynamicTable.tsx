@@ -9,7 +9,7 @@ import { toEnglishDigits } from "../../hooks/pubFunc/formatNumber";
 import Loader from "../Loading/Loader";
 import toast from "react-hot-toast";
 
-export interface ColumnConfig<T = any> {
+export interface ColumnConfig {
     header: string;
     accessor: string;
     type?: string;
@@ -22,7 +22,7 @@ export interface ColumnConfig<T = any> {
 
 interface DynamicTableProps<T = any> {
     apiEndpoint?: string;
-    columns: ColumnConfig<T>[];
+    columns: ColumnConfig[];
     haveVales?: boolean;
     primaryKey?: string;
     customRender?: (rowData: T, index: number) => React.ReactNode;
@@ -50,7 +50,6 @@ const DynamicTable = <T extends Record<string, any>>({
     haveVales,
     customRender,
     primaryKey = "id",
-    showReq = 8,
     recordsPerPage = 8,
     contractId,
     refreshFlag,
@@ -80,7 +79,9 @@ const DynamicTable = <T extends Record<string, any>>({
 
     const [rowsPerPage, setRowsPerPage] = useState<number>(recordsPerPage);
     const [selectedRow, setSelectedRow] = useState<T | null>(null);
-
+    useEffect(() => {
+    setRowsPerPage(recordsPerPage);
+}, [recordsPerPage]);
 
     const getNestedValue = (row: Record<string, any>, accessor: string): any => {
         try {
@@ -290,7 +291,7 @@ const DynamicTable = <T extends Record<string, any>>({
         onPage: onPageChange
     };
 
-    const renderCellValue = (rowData: T, col: ColumnConfig<T>, index: number) => {
+    const renderCellValue = (rowData: T, col: ColumnConfig, index: number) => {
         if (customRender) return customRender(rowData, index);
         const rawVal = getNestedValue(rowData, col.accessor);
         if (col.accessor.includes("date")) return convertToJalaliDate(rawVal);
@@ -307,7 +308,7 @@ const DynamicTable = <T extends Record<string, any>>({
     //     setPagination((prev) => ({ ...prev, limit: val, page: 1 }));
     //   };
 
-    const renderHeaderWithFilter = (col: ColumnConfig<T>) => {
+    const renderHeaderWithFilter = (col: ColumnConfig) => {
 
         if (col.customSearch) {
             return (

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { User } from '../chat/type';
-import Modal from '../../shared/Modal';
+
 
 type UserListProps = {
   users: User[];

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Room, RoomEvent, Track, LocalParticipant, RemoteParticipant, LocalTrackPublication, RemoteTrackPublication } from 'livekit-client';
 import toast from 'react-hot-toast';
@@ -23,8 +23,8 @@ const LiveKitMeeting: React.FC<LiveKitMeetingProps> = ({ onUsersUpdate }) => {
   const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
 
   
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [isMicOn, setIsMicOn] = useState(true);
+  // const [isCameraOn, setIsCameraOn] = useState(true);
+  // const [isMicOn, setIsMicOn] = useState(true);
 
   // ─────────────────────────────────────────────────────────────
   // Helper: تبدیل LocalParticipant به User
@@ -92,43 +92,9 @@ const LiveKitMeeting: React.FC<LiveKitMeetingProps> = ({ onUsersUpdate }) => {
     onUsersUpdate(users);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // کنترل دوربین
-  // ─────────────────────────────────────────────────────────────
-  const toggleCamera = async () => {
-    const room = roomRef.current;
-    if (!room) return;
+ 
 
-    try {
-      const newState = !isCameraOn;
-      await room.localParticipant.setCameraEnabled(newState);
-      setIsCameraOn(newState);
-      updateUsers();
-      toast.success(newState ? '📹 دوربین روشن شد' : '📹 دوربین خاموش شد');
-    } catch (error) {
-      console.error('خطا در تغییر وضعیت دوربین:', error);
-      toast.error('خطا در تغییر وضعیت دوربین');
-    }
-  };
-
-  // ─────────────────────────────────────────────────────────────
-  // کنترل میکروفون
-  // ─────────────────────────────────────────────────────────────
-  const toggleMicrophone = async () => {
-    const room = roomRef.current;
-    if (!room) return;
-
-    try {
-      const newState = !isMicOn;
-      await room.localParticipant.setMicrophoneEnabled(newState);
-      setIsMicOn(newState);
-      updateUsers();
-      toast.success(newState ? '🎤 میکروفون روشن شد' : '🎤 میکروفون خاموش شد');
-    } catch (error) {
-      console.error('خطا در تغییر وضعیت میکروفون:', error);
-      toast.error('خطا در تغییر وضعیت میکروفون');
-    }
-  };
+ 
 
   // ─────────────────────────────────────────────────────────────
   // اتصال به LiveKit
@@ -145,19 +111,19 @@ const LiveKitMeeting: React.FC<LiveKitMeetingProps> = ({ onUsersUpdate }) => {
     // ─────────────────────────────────────────────────────────────
     // رویداد: دریافت Track از سایر کاربران
     // ─────────────────────────────────────────────────────────────
-    room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+    room.on(RoomEvent.TrackSubscribed, (track) => {
       if (track.kind === Track.Kind.Video) {
         const videoElement = track.attach() as HTMLVideoElement;
         videoElement.style.width = '100%';
         videoElement.style.height = '100%';
         videoElement.style.objectFit = 'cover';
 
-        const container = document.getElementById(`video-container-${participant.identity}`);
-        if (container) {
-          container.innerHTML = '';
-          container.appendChild(videoElement);
-          videoElementsRef.current.set(participant.identity, videoElement);
-        }
+        // const container = document.getElementById(`video-container-${participant.identity}`);
+        // if (container) {
+        //   container.innerHTML = '';
+        //   container.appendChild(videoElement);
+        //   videoElementsRef.current.set(participant.identity, videoElement);
+        // }
 
         updateUsers(); // ✅ این خط هم باید اینجا باشه
       }
@@ -167,11 +133,11 @@ const LiveKitMeeting: React.FC<LiveKitMeetingProps> = ({ onUsersUpdate }) => {
     // ─────────────────────────────────────────────────────────────
     // رویداد: قطع Track
     // ─────────────────────────────────────────────────────────────
-    room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-      track.detach().forEach((el) => el.remove());
-      videoElementsRef.current.delete(participant.identity);
-      updateUsers();
-    });
+    // room.on(RoomEvent.TrackUnsubscribed, (track, participant) => {
+    //   track.detach().forEach((el) => el.remove());
+    //   videoElementsRef.current.delete(participant.identity);
+    //   updateUsers();
+    // });
 
     // ─────────────────────────────────────────────────────────────
     // رویداد: ورود کاربر جدید

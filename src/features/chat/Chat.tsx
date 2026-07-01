@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { Message, User, ChatMessagesMap } from './type';
+import React, { useEffect, useRef, useState } from 'react';
+import type { Message } from './type';
 import { useChatStore } from '../controls/ChatStore';
 import { socket } from '../../services/MockSocket';
 type ChatProps = {
@@ -49,7 +49,7 @@ const Chat: React.FC<ChatProps> = ({ selectedUser }) => {
     ? `${selectedUser.name} در حال تایپ...`
     : 'یکی از اعضا در حال تایپ...';
   const avatarText = selectedUser ? selectedUser.name.trim().charAt(0) : 'ع';
-    let num=0
+
   return (
     <div
       dir="rtl"

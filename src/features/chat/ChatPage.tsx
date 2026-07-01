@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import Chat from './Chat';
 import UserList from '../lobby/UserLists';
 import type { User } from './type';
 import { useChatStore } from '../controls/ChatStore';
-import { MemberForm, type MemberFormData } from '../../shared/MemberForm.js';
+import {type MemberFormData } from '../../shared/MemberForm.js';
 
 type ChatPageProps = {
     users: User[];
@@ -12,7 +11,7 @@ type ChatPageProps = {
     setInviteUser: (val: boolean) => void;
 };
 
-const ChatPage: React.FC<ChatPageProps> = ({ users, onSubmit ,inviteUser,setInviteUser }) => {
+const ChatPage: React.FC<ChatPageProps> = ({ users ,inviteUser,setInviteUser }) => {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const { closeChat } = useChatStore();
 

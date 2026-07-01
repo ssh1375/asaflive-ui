@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useMeetingHardware } from '../../hooks/useMeetingHardware.js';
-import { handleMeetingSetup } from '../../hooks/pubFunc/controllFunc.js';
+
+import { handleMeetingSetup } from '../../hooks/pubFunc/controllFunc.ts';
 
 interface DeviceItem {
   deviceId: string;

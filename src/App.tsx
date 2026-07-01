@@ -1,5 +1,5 @@
 // App.jsx
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ManagementPanel from "./ManagementPanel";
 import DefineUser from "./DefineUser";

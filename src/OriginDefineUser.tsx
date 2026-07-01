@@ -2,7 +2,7 @@
 import { useState } from "react";
 import TextInput from "./shared/Forms/TextInput";
 import toast from 'react-hot-toast';
-import { userSchema, type UserData } from "./hooks/validation/create-origin-user";
+import { userSchema } from "./hooks/validation/create-origin-user";
 import DynamicTable from "./shared/Tabel/DynamicTable";
 import getNestedValue from "./hooks/pubFunc/getNestedValue";
 import api from "./api/api";
@@ -35,7 +35,7 @@ type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNod
 
 export default function OriginDefineUser({
   initialValue = EMPTY_USER,
-  onSubmit,
+  // onSubmit,
 }: OriginDefineUserProps) {
   const [user, setUser] = useState<UserData>(initialValue);
   const [errors, setErrors] = useState<Errors>({});
@@ -54,7 +54,7 @@ export default function OriginDefineUser({
     phone: (value: string) => (
       <span className="font-mono text-blue-400" dir="ltr">{value}</span>
     ),
-    access: (value: any, row: any) => {
+    access: (_, row: any) => {
       return (
         <button
           onClick={() => setSelectedUser({
@@ -67,7 +67,7 @@ export default function OriginDefineUser({
         </button>
       );
     },
-    edite: (val: any, row: any) => {
+    edite: (_, row: any) => {
       return (
         <button onClick={() => {
           setEditingUserId(row.id);

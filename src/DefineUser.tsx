@@ -25,7 +25,7 @@ export default function RoleForm() {
     domainId: "",
     permissions: [],
   });
-  const [domains, setDomains] = useState<Domain[]>([]);
+  // const [domains, setDomains] = useState<Domain[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<PermissionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +48,10 @@ export default function RoleForm() {
         setLoading(true);
         const data = await permissionsService.getAll();
 
-        if (String(data?.status) === "401" || String(data?.status) === "500") {
-          toast.error('متاسفانه شما دسترسی به این بخش ندارید');
-          throw new Error("دسترسی غیرمجاز است");
-        }
+        // if (String(data?.status) === "401" || String(data?.status) === "500") {
+        //   toast.error('متاسفانه شما دسترسی به این بخش ندارید');
+        //   throw new Error("دسترسی غیرمجاز است");
+        // }
 
         setAvailablePermissions(data);
         setError(null);
@@ -72,7 +72,7 @@ export default function RoleForm() {
         const res = await api.get<Domain[]>("/rbac/domains");
         const domainList = Array.isArray(res.data) ? res.data : [];
 
-        setDomains(domainList);
+        // setDomains(domainList);
         setError(null);
 
         const asafDomain = domainList.find((d) => d.name === "asaflive.ir");
@@ -148,19 +148,19 @@ export default function RoleForm() {
     }
   };
 
-  const removePermissionDef = async (permId: string) => {
-    try {
-      await permissionsService.delete(permId);
-      setAvailablePermissions((prev) => prev.filter((p) => p.id !== permId));
-      setRole((prev) => ({
-        ...prev,
-        permissions: prev.permissions.filter((id) => id !== permId),
-      }));
-    } catch (err) {
-      alert("حذف دسترسی ناموفق بود");
-      console.error(err);
-    }
-  };
+  // const removePermissionDef = async (permId: string) => {
+  //   try {
+  //     await permissionsService.delete(permId);
+  //     setAvailablePermissions((prev) => prev.filter((p) => p.id !== permId));
+  //     setRole((prev) => ({
+  //       ...prev,
+  //       permissions: prev.permissions.filter((id) => id !== permId),
+  //     }));
+  //   } catch (err) {
+  //     alert("حذف دسترسی ناموفق بود");
+  //     console.error(err);
+  //   }
+  // };
 
   const togglePermission = useCallback((permId: string) => {
     setRole((prev) => {
