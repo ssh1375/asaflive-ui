@@ -10,22 +10,30 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track }) => {
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !track) return;
+    if (!container || !track) {
+      console.warn("⚠️ AudioPlayer: کانتینر یا Track صوتی یافت نشد.");
+      return;
+    }
+
+    console.log("✅ AudioPlayer: یک Track صوتی برای پخش دریافت شد:", track.kind);
 
     let element: HTMLMediaElement | null = null;
 
     if (track instanceof Track) {
-      // LiveKit خودش تگ <audio> می سازد
       element = track.attach();
     } else {
       element = document.createElement('audio');
-      element.autoplay = true;
-      // برای جلوگیری از خطاهای احتمالی، صدا در ابتدا Mute نیست
-      element.muted = false; 
       element.srcObject = new MediaStream([track]);
     }
 
+    element.autoplay = true;
+    element.muted = false; 
+
     container.appendChild(element);
+
+    element.play().catch((error) => {
+      console.error("❌ AudioPlayer: مرورگر اجازه پخش صدا را نداد:", error);
+    });
 
     return () => {
       if (track instanceof Track && element) {
@@ -37,6 +45,5 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track }) => {
     };
   }, [track]);
 
-  // یک دیو کاملاً مخفی که صرفاً نگهدارنده تگ صوتی است
   return <div ref={containerRef} style={{ display: 'none' }} aria-hidden="true" />;
 };

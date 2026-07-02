@@ -188,6 +188,7 @@ import Modal from '../../shared/Modal.js';
 import { MemberForm } from '../../shared/MemberForm.js';
 import VideoPlayer from './VideoPlayer.js';
 import { AudioPlayer } from './AudioPlayer.js';
+import { Participant, TrackPublication } from 'livekit-client';
 
 interface User {
   id: string;
@@ -238,55 +239,45 @@ const Main: React.FC = () => {
     setTimeout(updateArrows, 350);
   };
 
-  const buildUserList = useCallback(() => {
+   const buildUserList = useCallback(() => {
     const room = roomRef.current;
     if (!room) return;
 
     const allUsers: User[] = [];
+    
+    // تعریف صریح نوع آرایه به عنوان Participant[]
+    const participants: Participant[] = [
+      room.localParticipant, 
+      ...Array.from(room.remoteParticipants.values())
+    ];
 
-    // پردازش کاربر محلی (خودتان)
-    if (room.localParticipant) {
-      const lp = room.localParticipant;
-      const activeVideoPub = Array.from(lp.videoTrackPublications.values()).find(
-        (pub) => pub.track && !pub.isMuted
-      );
-      const activeAudioPub = Array.from(lp.audioTrackPublications.values()).find(
-        (pub) => pub.track && !pub.isMuted
-      );
-
-      allUsers.push({
-        id: lp.identity,
-        name: lp.name || lp.identity,
-        hasVideo: !!activeVideoPub,
-        videoTrack: activeVideoPub?.track, // پاس دادن آبجکت ترک
-        isMuted: Array.from(lp.audioTrackPublications.values()).every(
-          (pub) => !pub.track || pub.isMuted
-        ),
-        isSpeaking: lp.isSpeaking,
-        audioTrack: activeAudioPub?.track,
-      });
-    }
-
-    // پردازش سایر کاربران (Remote)
-    room.remoteParticipants.forEach((rp) => {
-      const activeVideoPub = Array.from(rp.videoTrackPublications.values()).find(
-        (pub) => pub.track && !pub.isMuted
-      );
+    participants.forEach((p) => {
+      // استفاده از Type Assertion برای رفع خطای Array.from در تایپ‌اسکریپت
+      const activeVideoPub = Array.from(
+        p.videoTrackPublications.values() as Iterable<TrackPublication>
+      ).find((pub) => pub.track && !pub.isMuted);
+      
+      const activeAudioPub = Array.from(
+        p.audioTrackPublications.values() as Iterable<TrackPublication>
+      ).find((pub) => pub.track && !pub.isMuted);
 
       allUsers.push({
-        id: rp.identity,
-        name: rp.name || rp.identity,
+        id: p.identity,
+        name: p.name || p.identity,
+        
         hasVideo: !!activeVideoPub,
-        videoTrack: activeVideoPub?.track, // پاس دادن آبجکت ترک
-        isMuted: Array.from(rp.audioTrackPublications.values()).every(
-          (pub) => !pub.track || pub.isMuted
-        ),
-        isSpeaking: rp.isSpeaking,
+        videoTrack: activeVideoPub?.track, 
+        
+        isMuted: !activeAudioPub, 
+        audioTrack: activeAudioPub?.track, 
+        
+        isSpeaking: p.isSpeaking,
       });
     });
 
     setUsers(allUsers);
   }, []);
+
 
 
   const attachTrack = useCallback((track: Track | MediaStreamTrack, participantId: string) => {
