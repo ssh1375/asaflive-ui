@@ -187,12 +187,14 @@ import {
 import Modal from '../../shared/Modal.js';
 import { MemberForm } from '../../shared/MemberForm.js';
 import VideoPlayer from './VideoPlayer.js';
+import { AudioPlayer } from './AudioPlayer.js';
 
 interface User {
   id: string;
   name: string;
   hasVideo: boolean;
   videoTrack?: Track | MediaStreamTrack | null;
+  audioTrack?: Track | MediaStreamTrack | null;
   isMuted: boolean;
   isSpeaking: boolean;
 }
@@ -248,6 +250,9 @@ const Main: React.FC = () => {
       const activeVideoPub = Array.from(lp.videoTrackPublications.values()).find(
         (pub) => pub.track && !pub.isMuted
       );
+      const activeAudioPub = Array.from(lp.audioTrackPublications.values()).find(
+        (pub) => pub.track && !pub.isMuted
+      );
 
       allUsers.push({
         id: lp.identity,
@@ -258,6 +263,7 @@ const Main: React.FC = () => {
           (pub) => !pub.track || pub.isMuted
         ),
         isSpeaking: lp.isSpeaking,
+        audioTrack: activeAudioPub?.track,
       });
     }
 
@@ -587,86 +593,112 @@ const Main: React.FC = () => {
               scrollbarWidth: 'none',
             }}
           >
-            {users.map((user, _) => (
-              <div
-                key={user.id}
-                style={{
-                  position: 'relative',
-                  flexShrink: 0,
-                  scrollSnapAlign: 'center',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  width: '500px',
-                  height: '500px',
-                  border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
-                  boxShadow: user.isSpeaking ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)' : 'none',
-                  transition: 'all 0.3s',
-                  cursor: 'pointer',
-                  background: '#18181b',
-                }}
-              >
-                {user.isSpeaking && (
+            {users.map((user) => {
+              // بررسی اینکه آیا این کاربر، خود شما هستید یا خیر (برای جلوگیری از اکوی صدا)
+              // فرض بر این است که roomRef در کامپوننت شما در دسترس است
+              const isLocalUser = roomRef.current?.localParticipant.identity === user.id;
+
+              return (
+                <div
+                  key={user.id}
+                  style={{
+                    position: 'relative',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'center',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    width: '500px',
+                    height: '500px',
+                    border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
+                    boxShadow: user.isSpeaking
+                      ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)'
+                      : 'none',
+                    transition: 'all 0.3s',
+                    cursor: 'pointer',
+                    background: '#18181b',
+                  }}
+                >
+                  {/* افکت بصری هنگام صحبت کردن */}
+                  {user.isSpeaking && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '12px',
+                        background: 'rgba(74,222,128,0.05)',
+                        zIndex: 10,
+                        pointerEvents: 'none',
+                        animation: 'pulse 1s infinite',
+                      }}
+                    />
+                  )}
+
+                  {/* رندر تصویر یا Placeholder */}
+                  {user.hasVideo && user.videoTrack ? (
+                    <VideoPlayer track={user.videoTrack} participantId={user.id} />
+                  ) : (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: `linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)`,
+                      }}
+                    >
+                      <span style={{ color: '#fff', fontSize: '32px', fontWeight: 'bold' }}>
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {!isLocalUser && user.audioTrack && (
+                    <AudioPlayer track={user.audioTrack} />
+                  )}
+
+                  {/* نوار اطلاعات پایین کارت */}
                   <div
                     style={{
                       position: 'absolute',
-                      inset: 0,
-                      borderRadius: '12px',
-                      background: 'rgba(74,222,128,0.05)',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      animation: 'pulse 1s infinite',
-                    }}
-                  />
-                )}
-
-                {user.hasVideo && user.videoTrack ? (
-                  <VideoPlayer track={user.videoTrack} participantId={user.id} />
-                ) : (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent)',
+                      paddingTop: '16px',
+                      paddingBottom: '4px',
+                      paddingLeft: '6px',
+                      paddingRight: '6px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      background: `linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)`,
+                      justifyContent: 'space-between',
+                      gap: '4px',
+                      zIndex: 20,
                     }}
                   >
-                    <span style={{ color: '#fff', fontSize: '32px', fontWeight: 'bold' }}>
-                      {user.name.charAt(0).toUpperCase()}
+                    <span
+                      style={{
+                        color: '#fff',
+                        fontSize: '12px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        flex: 1,
+                        textAlign: 'right'
+                      }}
+                    >
+                      {user.name}
                     </span>
+                    {user.isMuted ? (
+                      <span style={{ color: '#f87171', fontSize: '12px' }}>🔇</span>
+                    ) : (
+                      <span style={{ color: '#4ade80', fontSize: '12px', animation: 'pulse 1s infinite' }}>🎤</span>
+                    )}
                   </div>
-                )}
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent)',
-                    paddingTop: '16px',
-                    paddingBottom: '4px',
-                    paddingLeft: '6px',
-                    paddingRight: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '4px',
-                    zIndex: 20,
-                  }}
-                >
-                  <span style={{ color: '#fff', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, textAlign: 'right' }}>
-                    {user.name}
-                  </span>
-                  {user.isMuted ? (
-                    <span style={{ color: '#f87171', fontSize: '12px' }}>🔇</span>
-                  ) : (
-                    <span style={{ color: '#4ade80', fontSize: '12px', animation: 'pulse 1s infinite' }}>🎤</span>
-                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
+
           </div>
 
           <button
