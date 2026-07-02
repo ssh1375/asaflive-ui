@@ -206,7 +206,7 @@ export default function Dashboard() {
   const { isLoading: isAuthLoading, refetch } = useAuth();
   const { withAuthGuard } = useAuth();
 
- const getToken = async (id: string): Promise<string | null> => {
+ const getToken = async (id?: string): Promise<string | null> => {
   const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
 
   try {
@@ -396,7 +396,7 @@ export default function Dashboard() {
           >
             انتخاب نوع جلسه
           </button> */}
-          <button onClick={() => getToken()} className="w-full text-center px-6 py-3 bg-transparent border border-white text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base ">کلیک</button>
+          <button  className="w-full text-center px-6 py-3 bg-transparent border border-white text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base ">کلیک</button>
           <button
             onClick={handleProtectedMeetingAction}
             disabled={isAuthLoading}
