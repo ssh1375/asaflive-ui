@@ -184,6 +184,7 @@ import {
   RemoteTrack,
   RemoteParticipant,
   LocalParticipant,
+  VideoPresets
 } from 'livekit-client';
 import Modal from '../../shared/Modal.js';
 import { MemberForm } from '../../shared/MemberForm.js';
@@ -307,43 +308,43 @@ const Main: React.FC = () => {
   };
 
   const buildUserList = useCallback(() => {
-  const room = roomRef.current;
-  if (!room) return;
+    const room = roomRef.current;
+    if (!room) return;
 
-  const participants: Participant[] = [
-    room.localParticipant,
-    ...Array.from(room.remoteParticipants.values())
-  ];
+    const participants: Participant[] = [
+      room.localParticipant,
+      ...Array.from(room.remoteParticipants.values())
+    ];
 
-  const allUsers: User[] = participants.map((p) => {
-    // دریافت مستقیم وب‌کم و میکروفون با استفاده از متدهای بومی LiveKit
-    const cameraPub = p.getTrackPublication(Track.Source.Camera);
-    const micPub = p.getTrackPublication(Track.Source.Microphone);
+    const allUsers: User[] = participants.map((p) => {
+      // دریافت مستقیم وب‌کم و میکروفون با استفاده از متدهای بومی LiveKit
+      const cameraPub = p.getTrackPublication(Track.Source.Camera);
+      const micPub = p.getTrackPublication(Track.Source.Microphone);
 
-    // بررسی اینکه آیا ترک وجود دارد و Mute نیست
-    const isCameraActive = cameraPub && cameraPub.track && !cameraPub.isMuted;
-    const isMicActive = micPub && micPub.track && !micPub.isMuted;
+      // بررسی اینکه آیا ترک وجود دارد و Mute نیست
+      const isCameraActive = cameraPub && cameraPub.track && !cameraPub.isMuted;
+      const isMicActive = micPub && micPub.track && !micPub.isMuted;
 
-    return {
-      id: p.identity,
-      name: p.name || p.identity,
-      
-      participant: p,
-      isLocalUser: p instanceof LocalParticipant,
+      return {
+        id: p.identity,
+        name: p.name || p.identity,
 
-      videoTrack: isCameraActive ? cameraPub.track : undefined,
-      hasVideo: !!isCameraActive,
+        participant: p,
+        isLocalUser: p instanceof LocalParticipant,
 
-      audioTrack: isMicActive ? micPub.track : undefined,
-      hasAudio: !!isMicActive,
-      isMuted: !isMicActive,
-      
-      isSpeaking: p.isSpeaking,
-    };
-  });
+        videoTrack: isCameraActive ? cameraPub.track : undefined,
+        hasVideo: !!isCameraActive,
 
-  setUsers(allUsers);
-}, []);
+        audioTrack: isMicActive ? micPub.track : undefined,
+        hasAudio: !!isMicActive,
+        isMuted: !isMicActive,
+
+        isSpeaking: p.isSpeaking,
+      };
+    });
+
+    setUsers(allUsers);
+  }, []);
 
 
 
@@ -398,7 +399,25 @@ const Main: React.FC = () => {
       return;
     }
 
-    const room = new Room();
+    const room = new Room({
+      // 👈 فعال‌سازی تطبیق خودکار کیفیت با سایز صفحه نمایش کاربر هدف
+      adaptiveStream: true, 
+      // 👈 ارسال چند کیفیت مختلف به سرور تا هر کاربر بر اساس سرعت اینترنتش بهترین را دریافت کند
+      dynacast: true,
+      // 👈 تنظیمات پیش‌فرض برای انتشار ویدیو
+      publishDefaults: {
+        simulcast: true,
+        videoSimulcastLayers: [
+          VideoPresets.h1080,
+          VideoPresets.h720,
+          VideoPresets.h360,
+        ],
+      },
+      // 👈 تنظیمات پیش‌فرض وب‌کم
+      videoCaptureDefaults: {
+        resolution: VideoPresets.h720.resolution,
+      },
+    });
     roomRef.current = room;
 
     room.on(RoomEvent.Connected, async () => {
@@ -424,7 +443,8 @@ const Main: React.FC = () => {
       try {
         // اجبار به رزولوشن پایین
         await room.localParticipant.setCameraEnabled(true, {
-          resolution: { width: 640, height: 480 }
+          // resolution: { width: 640, height: 480 }
+          resolution: VideoPresets.h720.resolution
         });
         console.log('✅ Camera OK');
         setIsCameraOff(false);
@@ -435,7 +455,9 @@ const Main: React.FC = () => {
         // تلاش دوم با کیفیت پایین‌تر
         try {
           await room.localParticipant.setCameraEnabled(true, {
-            resolution: { width: 320, height: 240 }
+            // resolution: { width: 320, height: 240 }
+            resolution: VideoPresets.h540.resolution,
+
           });
           console.log('✅ Camera OK (low res)');
           setIsCameraOff(false);
@@ -825,8 +847,8 @@ const Main: React.FC = () => {
       scroll-snap-align: center;
       border-radius: 12px;
       overflow: hidden;
-      width: 500px;
-      height: 500px;
+      width: 560px;
+      height: 315px;
       transition: all 0.3s;
       cursor: pointer;
       background: #18181b;
