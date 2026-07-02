@@ -32,7 +32,7 @@
 
 //     const videoMapRef = useRef<Map<string, HTMLVideoElement>>(new Map());
 
-    
+
 //     const [liveKitUsers, setLiveKitUsers] = useState<User[]>([]);
 
 //     useEffect(() => {
@@ -53,7 +53,7 @@
 
 //     return (
 //         <div className="flex h-screen w-full bg-[rgb(var(--bg))] text-[rgb(var(--bg))] overflow-hidden font-sans relative">
-            
+
 //             {/* ✅ LiveKitMeeting لیست کاربران را به Main پاس می‌دهد */}
 //             {/* <LiveKitMeeting onUsersUpdate={setLiveKitUsers} /> */}
 //             <LiveKitMeeting onUsersUpdate={setLiveKitUsers} videoElementsMap={videoMapRef} />
@@ -75,7 +75,7 @@
 //                             loop
 //                             playsInline
 //                         />
-                        
+
 //                         <LiveMonitor
 //                             locationName="Tehran, Iran"
 //                             coordinates="35.6892° N, 51.3890° E"
@@ -186,11 +186,13 @@ import {
 } from 'livekit-client';
 import Modal from '../../shared/Modal.js';
 import { MemberForm } from '../../shared/MemberForm.js';
+import VideoPlayer from './VideoPlayer.js';
 
 interface User {
   id: string;
   name: string;
   hasVideo: boolean;
+  videoTrack?: Track | MediaStreamTrack | null;
   isMuted: boolean;
   isSpeaking: boolean;
 }
@@ -240,14 +242,18 @@ const Main: React.FC = () => {
 
     const allUsers: User[] = [];
 
+    // پردازش کاربر محلی (خودتان)
     if (room.localParticipant) {
       const lp = room.localParticipant;
+      const activeVideoPub = Array.from(lp.videoTrackPublications.values()).find(
+        (pub) => pub.track && !pub.isMuted
+      );
+
       allUsers.push({
         id: lp.identity,
         name: lp.name || lp.identity,
-        hasVideo: Array.from(lp.videoTrackPublications.values()).some(
-          (pub) => pub.track && !pub.isMuted
-        ),
+        hasVideo: !!activeVideoPub,
+        videoTrack: activeVideoPub?.track, // پاس دادن آبجکت ترک
         isMuted: Array.from(lp.audioTrackPublications.values()).every(
           (pub) => !pub.track || pub.isMuted
         ),
@@ -255,13 +261,17 @@ const Main: React.FC = () => {
       });
     }
 
+    // پردازش سایر کاربران (Remote)
     room.remoteParticipants.forEach((rp) => {
+      const activeVideoPub = Array.from(rp.videoTrackPublications.values()).find(
+        (pub) => pub.track && !pub.isMuted
+      );
+
       allUsers.push({
         id: rp.identity,
         name: rp.name || rp.identity,
-        hasVideo: Array.from(rp.videoTrackPublications.values()).some(
-          (pub) => pub.track && !pub.isMuted
-        ),
+        hasVideo: !!activeVideoPub,
+        videoTrack: activeVideoPub?.track, // پاس دادن آبجکت ترک
         isMuted: Array.from(rp.audioTrackPublications.values()).every(
           (pub) => !pub.track || pub.isMuted
         ),
@@ -272,7 +282,8 @@ const Main: React.FC = () => {
     setUsers(allUsers);
   }, []);
 
-  const attachTrack = useCallback((track: RemoteTrack | MediaStreamTrack, participantId: string) => {
+
+  const attachTrack = useCallback((track: Track | MediaStreamTrack, participantId: string) => {
     const container = document.getElementById(`video-container-${participantId}`);
     if (!container) {
       console.warn(`⚠️ کانتینر ${participantId} پیدا نشد`);
@@ -280,25 +291,32 @@ const Main: React.FC = () => {
     }
 
     let element: HTMLVideoElement | HTMLAudioElement;
-    if (track.kind === 'video') {
-      element = track instanceof RemoteTrack ? track.attach() : document.createElement('video');
-      if (!(track instanceof RemoteTrack) && track instanceof MediaStreamTrack) {
+    if (track instanceof Track) {
+      // هم برای RemoteTrack و هم LocalTrack (LiveKit Track)
+      element = track.attach();
+      if (track.kind === 'video') {
+        element.style.width = '100%';
+        element.style.height = '100%';
+        element.style.objectFit = 'cover';
+      }
+      console.log(`✅ ${track.kind === 'video' ? 'ویدیو' : 'صدا'} ${participantId} متصل شد (LiveKit Track)`);
+    } else {
+      // MediaStreamTrack خام (fallback)
+      if (track.kind === 'video') {
+        element = document.createElement('video');
         (element as HTMLVideoElement).srcObject = new MediaStream([track]);
         (element as HTMLVideoElement).autoplay = true;
         (element as HTMLVideoElement).playsInline = true;
         (element as HTMLVideoElement).muted = false;
-      }
-      element.style.width = '100%';
-      element.style.height = '100%';
-      element.style.objectFit = 'cover';
-      console.log(`✅ ویدیو ${participantId} متصل شد`);
-    } else {
-      element = track instanceof RemoteTrack ? track.attach() : document.createElement('audio');
-      if (!(track instanceof RemoteTrack) && track instanceof MediaStreamTrack) {
+        element.style.width = '100%';
+        element.style.height = '100%';
+        element.style.objectFit = 'cover';
+      } else {
+        element = document.createElement('audio');
         (element as HTMLAudioElement).srcObject = new MediaStream([track]);
         (element as HTMLAudioElement).autoplay = true;
       }
-      console.log(`✅ صدای ${participantId} متصل شد`);
+      console.log(`✅ ${track.kind === 'video' ? 'ویدیو' : 'صدا'} ${participantId} متصل شد (MediaStreamTrack)`);
     }
 
     container.innerHTML = '';
@@ -318,61 +336,57 @@ const Main: React.FC = () => {
     const room = new Room();
     roomRef.current = room;
 
-   room.on(RoomEvent.Connected, async () => {
-  console.log('Connected to room');
-  setConnected(true);
+    room.on(RoomEvent.Connected, async () => {
+      console.log('Connected to room');
+      setConnected(true);
 
-  // ✅ صبر تا Room کاملاً ready بشه
-  await new Promise(resolve => setTimeout(resolve, 500));
+      // ✅ صبر تا Room کاملاً ready بشه
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-  // فعال‌سازی با Try-Catch جداگانه
-  try {
-    await room.localParticipant.setMicrophoneEnabled(true);
-    console.log('✅ Mic OK');
-    setIsMuted(false);
-  } catch (e: any) {
-    console.error('❌ Mic failed:', e.message);
-    setIsMuted(true);
-  }
+      // فعال‌سازی با Try-Catch جداگانه
+      try {
+        await room.localParticipant.setMicrophoneEnabled(true);
+        console.log('✅ Mic OK');
+        setIsMuted(false);
+      } catch (e: any) {
+        console.error('❌ Mic failed:', e.message);
+        setIsMuted(true);
+      }
 
-  // دوربین با تأخیر بیشتر
-  await new Promise(resolve => setTimeout(resolve, 300));
+      // دوربین با تأخیر بیشتر
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-  try {
-    // اجبار به رزولوشن پایین
-    await room.localParticipant.setCameraEnabled(true, {
-      resolution: { width: 640, height: 480 }
+      try {
+        // اجبار به رزولوشن پایین
+        await room.localParticipant.setCameraEnabled(true, {
+          resolution: { width: 640, height: 480 }
+        });
+        console.log('✅ Camera OK');
+        setIsCameraOff(false);
+      } catch (e: any) {
+        console.error('❌ Camera failed:', e.name, e.message);
+        setIsCameraOff(true);
+
+        // تلاش دوم با کیفیت پایین‌تر
+        try {
+          await room.localParticipant.setCameraEnabled(true, {
+            resolution: { width: 320, height: 240 }
+          });
+          console.log('✅ Camera OK (low res)');
+          setIsCameraOff(false);
+        } catch (e2: any) {
+          console.error('❌ Camera totally failed');
+          setError('دوربین غیرفعال است');
+        }
+      }
+
+      buildUserList();
     });
-    console.log('✅ Camera OK');
-    setIsCameraOff(false);
-  } catch (e: any) {
-    console.error('❌ Camera failed:', e.name, e.message);
-    setIsCameraOff(true);
-    
-    // تلاش دوم با کیفیت پایین‌تر
-    try {
-      await room.localParticipant.setCameraEnabled(true, {
-        resolution: { width: 320, height: 240 }
-      });
-      console.log('✅ Camera OK (low res)');
-      setIsCameraOff(false);
-    } catch (e2: any) {
-      console.error('❌ Camera totally failed');
-      setError('دوربین غیرفعال است');
-    }
-  }
-
-  buildUserList();
-});
 
 
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
       console.log(`📥 Track دریافت شد از ${participant.identity}:`, track.kind);
-      if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {
-        setTimeout(() => {
-          attachTrack(track, participant.identity);
-        }, 50);
-      }
+
       buildUserList();
     });
 
@@ -417,11 +431,19 @@ const Main: React.FC = () => {
     };
   }, [buildUserList, attachTrack]);
 
+  useEffect(() => {
+    const room = roomRef.current;
+    if (!room || isCameraOff) return;
+    const pub = room.localParticipant.videoTrackPublications.values().next().value;
+    if (pub?.track) {
+      attachTrack(pub.track, room.localParticipant.identity);
+    }
+  }, [isCameraOff, attachTrack]);
   // ✅ اصلاح شده
   const toggleMute = async () => {
     const room = roomRef.current;
     if (!room) return;
-    
+
     const newMuteState = !isMuted;
     await room.localParticipant.setMicrophoneEnabled(!newMuteState);
     setIsMuted(newMuteState);
@@ -437,7 +459,7 @@ const Main: React.FC = () => {
     await room.localParticipant.setCameraEnabled(!newCameraState);
     setIsCameraOff(newCameraState);
     console.log(`📹 دوربین: ${newCameraState ? 'خاموش' : 'روشن'}`);
-    
+
     setTimeout(buildUserList, 100);
   };
 
@@ -447,14 +469,14 @@ const Main: React.FC = () => {
   };
 
   const handleSubmit = () => {
-        setInviteUser(false);
-    };
+    setInviteUser(false);
+  };
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', background: '#09090b', color: '#fff', fontFamily: 'sans-serif' }}>
-      
+
       {/* Main Video Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', gap: '16px' }}>
-        
+
         {/* Status Bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#18181b', borderRadius: '12px', border: '1px solid #27272a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -574,8 +596,8 @@ const Main: React.FC = () => {
                   scrollSnapAlign: 'center',
                   borderRadius: '12px',
                   overflow: 'hidden',
-                  width: '176px',
-                  height: '112px',
+                  width: '500px',
+                  height: '500px',
                   border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
                   boxShadow: user.isSpeaking ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)' : 'none',
                   transition: 'all 0.3s',
@@ -597,8 +619,8 @@ const Main: React.FC = () => {
                   />
                 )}
 
-                {user.hasVideo ? (
-                  <div id={`video-container-${user.id}`} style={{ width: '100%', height: '100%', background: '#000' }} />
+                {user.hasVideo && user.videoTrack ? (
+                  <VideoPlayer track={user.videoTrack} participantId={user.id} />
                 ) : (
                   <div
                     style={{
@@ -762,11 +784,11 @@ const Main: React.FC = () => {
         </div>
       </div>
 
-     
-       <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
-                 <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
-            </Modal>
-      
+
+      <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
+        <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
+      </Modal>
+
 
       <style>{`
         @keyframes pulse {

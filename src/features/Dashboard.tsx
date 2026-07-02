@@ -191,8 +191,8 @@ const BACKGROUND_IMAGES = Object.values(modules) as string[];
 
 
 export default function Dashboard() {
-  
-  
+
+
 
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -205,33 +205,66 @@ export default function Dashboard() {
 
   const { isLoading: isAuthLoading, refetch } = useAuth();
   const { withAuthGuard } = useAuth();
-  
 
-  const handleSessionFinalSubmit = async (
-    data: SessionData,
-  
-  ) => {
-    try {
-      const res = await api.post('/session-manager/new-session', {
-        ...data,
-        emptyTimeout: data.emptyTimeout * 60,
-      });
+ const getToken = async (id: string): Promise<string | null> => {
+  const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
 
-      const meetingId = res.data.meeting.id;
+  try {
+    const userRes = await api.get("/auth/me");
+    const user = userRes.data;
 
-      toast.success("جلسه ساخته شد");
+    const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+
+    const inviteRes = await api.post(`/session-manager/invite/${id}`, {
+      phone: user.phone,
+      displayName: displayName || "کاربر مهمان", 
+      permissions: { roomJoin: true, canPublish: true, canSubscribe: true }
+    });
+    console.log("XXXXXXX",inviteRes);
+    
+    toast.success("توکن با موفقیت ساخته شد", { id: toastId });
+
+    const token = inviteRes.data?.accessToken; 
+    
+    return token; 
+
+  } catch (error: any) {
+    console.error("خطا در استعلام کاربر یا ساخت توکن:", error);
+    toast.error("خطا در ساخت توکن", { id: toastId });
+    throw error; 
+  }
+};
+  const handleSessionFinalSubmit = async (data: SessionData) => {
+  const toastId = toast.loading("در حال ساخت جلسه...");
+
+  try {
+    const sessionRes = await api.post('/session-manager/new-session', {
+      ...data,
+      emptyTimeout: data.emptyTimeout * 60,
+    });
+
+    const meetingId = sessionRes.data.meeting.id;
+    toast.success("جلسه با موفقیت ساخته شد", { id: toastId });
+
+    const token = await getToken(meetingId);
+
+    if (token) {
+      navigate(`/session/${meetingId}?token=${token}`);
+    } else {
       navigate(`/session/${meetingId}`);
-    } catch (error) {
-      console.error("خطا", error);
-      toast.error("خطا در ساخت جلسه");
-    } finally {
-      setIsMeetingModalOpen(false);
     }
-  };
+
+  } catch (error) {
+    console.error("خطا در فرآیند ایجاد جلسه:", error);
+    toast.error("خطا در ساخت جلسه", { id: toastId });
+  } finally {
+    setIsMeetingModalOpen(false);
+  }
+};
 
 
   const handleAccessSelect = (type: MediaDeviceType) => {
-    
+
     setIsAccessModalOpen(false);
     console.log("سخت‌افزار انتخاب‌شده:", type);
   };
@@ -363,6 +396,7 @@ export default function Dashboard() {
           >
             انتخاب نوع جلسه
           </button> */}
+          <button onClick={() => getToken()} className="w-full text-center px-6 py-3 bg-transparent border border-white text-white rounded-lg font-medium transition-colors duration-200 text-sm md:text-base ">کلیک</button>
           <button
             onClick={handleProtectedMeetingAction}
             disabled={isAuthLoading}

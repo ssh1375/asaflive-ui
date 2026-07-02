@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { memberSchema, type MemberForm } from "../hooks/validation/member-schema";
 import api from "../api/api";
 import { useParams } from "react-router-dom";
@@ -25,8 +25,10 @@ export function MemberForm({ onSubmit, onClose }: MemberFormProps) {
   const [sendMedia, setSendMedia] = useState<string>("yes");
   const [errors, setErrors] = useState<Errors>({});
   const { id } = useParams();
-  setReceiveMedia("yes")
-  setSendMedia("yes")
+  useEffect(()=>{
+    setReceiveMedia("yes")
+    setSendMedia("yes")
+  },[])
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
