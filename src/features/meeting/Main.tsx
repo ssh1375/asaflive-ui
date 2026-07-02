@@ -183,19 +183,24 @@ import {
   Track,
   RemoteTrack,
   RemoteParticipant,
+  LocalParticipant,
 } from 'livekit-client';
 import Modal from '../../shared/Modal.js';
 import { MemberForm } from '../../shared/MemberForm.js';
 import VideoPlayer from './VideoPlayer.js';
 import { AudioPlayer } from './AudioPlayer.js';
-import { Participant, TrackPublication } from 'livekit-client';
+import { Participant } from 'livekit-client';
 
 interface User {
   id: string;
   name: string;
+
   hasVideo: boolean;
   videoTrack?: Track | MediaStreamTrack | null;
+
+  hasAudio: boolean;
   audioTrack?: Track | MediaStreamTrack | null;
+
   isMuted: boolean;
   isSpeaking: boolean;
 }
@@ -302,42 +307,44 @@ const Main: React.FC = () => {
   };
 
   const buildUserList = useCallback(() => {
-    const room = roomRef.current;
-    if (!room) return;
+  const room = roomRef.current;
+  if (!room) return;
 
-    const allUsers: User[] = [];
+  const participants: Participant[] = [
+    room.localParticipant,
+    ...Array.from(room.remoteParticipants.values())
+  ];
 
-    // تعریف صریح نوع آرایه به عنوان Participant[]
-    const participants: Participant[] = [
-      room.localParticipant,
-      ...Array.from(room.remoteParticipants.values())
-    ];
+  const allUsers: User[] = participants.map((p) => {
+    // دریافت مستقیم وب‌کم و میکروفون با استفاده از متدهای بومی LiveKit
+    const cameraPub = p.getTrackPublication(Track.Source.Camera);
+    const micPub = p.getTrackPublication(Track.Source.Microphone);
 
-    participants.forEach((p) => {
-      const activeVideoPub = Array.from(
-        p.videoTrackPublications.values() as Iterable<TrackPublication>
-      ).find((pub) => pub.track && !pub.isMuted);
+    // بررسی اینکه آیا ترک وجود دارد و Mute نیست
+    const isCameraActive = cameraPub && cameraPub.track && !cameraPub.isMuted;
+    const isMicActive = micPub && micPub.track && !micPub.isMuted;
 
-      const activeAudioPub = Array.from(
-        p.audioTrackPublications.values() as Iterable<TrackPublication>
-      ).find((pub) => pub.track && !pub.isMuted);
+    return {
+      id: p.identity,
+      name: p.name || p.identity,
+      
+      participant: p,
+      isLocalUser: p instanceof LocalParticipant,
 
-      allUsers.push({
-        id: p.identity,
-        name: p.name || p.identity,
+      videoTrack: isCameraActive ? cameraPub.track : undefined,
+      hasVideo: !!isCameraActive,
 
-        hasVideo: !!activeVideoPub,
-        videoTrack: activeVideoPub?.track,
+      audioTrack: isMicActive ? micPub.track : undefined,
+      hasAudio: !!isMicActive,
+      isMuted: !isMicActive,
+      
+      isSpeaking: p.isSpeaking,
+    };
+  });
 
-        isMuted: !activeAudioPub,
-        audioTrack: activeAudioPub?.track,
+  setUsers(allUsers);
+}, []);
 
-        isSpeaking: p.isSpeaking,
-      });
-    });
-
-    setUsers(allUsers);
-  }, []);
 
 
 
@@ -635,7 +642,7 @@ const Main: React.FC = () => {
                     </div>
                   )}
 
-                  {!isLocalUser && user.audioTrack && (
+                  {!isLocalUser && user.audioTrack && user.hasAudio && (
                     <AudioPlayer track={user.audioTrack} />
                   )}
 
