@@ -478,358 +478,446 @@ const Main: React.FC = () => {
     setInviteUser(false);
   };
   return (
-    <div style={{ width: '100%', height: '100vh', display: 'flex', background: '#09090b', color: '#fff', fontFamily: 'sans-serif' }}>
+   <div className="vc-root">
 
-      {/* Main Video Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', gap: '16px' }}>
+  {/* Main Video Area */}
+  <div className="vc-main">
 
-        {/* Status Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#18181b', borderRadius: '12px', border: '1px solid #27272a' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                background: connected ? '#22c55e' : '#ef4444',
-                animation: connected ? 'pulse 2s infinite' : 'none',
-              }}
-            />
-            <span style={{ fontSize: '14px', color: '#a1a1aa' }}>
-              {connected ? 'متصل' : 'قطع شده'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={toggleMute}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: isMuted ? '#ef4444' : '#3f3f46',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '13px',
-                transition: 'all 0.2s',
-              }}
-            >
-              {isMuted ? '🔇 میکروفون خاموش' : '🎤 میکروفون روشن'}
-            </button>
-            <button
-              onClick={toggleCamera}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: isCameraOff ? '#ef4444' : '#3f3f46',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '13px',
-                transition: 'all 0.2s',
-              }}
-            >
-              {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
-            </button>
-            <button
-              onClick={leaveCall}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#dc2626',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '13px',
-                transition: 'all 0.2s',
-              }}
-            >
-              🚪 خروج
-            </button>
-          </div>
-        </div>
-
-        {error && (
-          <div style={{ padding: '12px', background: '#7f1d1d', border: '1px solid #991b1b', borderRadius: '8px', fontSize: '14px' }}>
-            {error}
-          </div>
-        )}
-
-        {/* User Slider */}
-        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <button
-            onClick={() => slide('left')}
-            style={{
-              position: 'absolute',
-              left: '4px',
-              zIndex: 10,
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              background: 'rgba(24,24,27,0.9)',
-              border: '1px solid #52525b',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              opacity: canLeft ? 1 : 0,
-              pointerEvents: canLeft ? 'auto' : 'none',
-              transition: 'all 0.2s',
-            }}
-          >
-            ←
-          </button>
-
-          <div
-            ref={scrollRef}
-            onScroll={updateArrows}
-            style={{
-              width: '100%',
-              display: 'flex',
-              gap: '8px',
-              overflowX: 'auto',
-              scrollSnapType: 'x mandatory',
-              padding: '8px 4px',
-              scrollbarWidth: 'none',
-            }}
-          >
-            {users.map((user) => {
-              // بررسی اینکه آیا این کاربر، خود شما هستید یا خیر (برای جلوگیری از اکوی صدا)
-              // فرض بر این است که roomRef در کامپوننت شما در دسترس است
-              const isLocalUser = roomRef.current?.localParticipant.identity === user.id;
-
-              return (
-                <div
-                  key={user.id}
-                  style={{
-                    position: 'relative',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'center',
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    width: '500px',
-                    height: '500px',
-                    border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
-                    boxShadow: user.isSpeaking
-                      ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)'
-                      : 'none',
-                    transition: 'all 0.3s',
-                    cursor: 'pointer',
-                    background: '#18181b',
-                  }}
-                >
-                  {/* افکت بصری هنگام صحبت کردن */}
-                  {user.isSpeaking && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        borderRadius: '12px',
-                        background: 'rgba(74,222,128,0.05)',
-                        zIndex: 10,
-                        pointerEvents: 'none',
-                        animation: 'pulse 1s infinite',
-                      }}
-                    />
-                  )}
-
-                  {/* رندر تصویر یا Placeholder */}
-                  {user.hasVideo && user.videoTrack ? (
-                    <VideoPlayer track={user.videoTrack} participantId={user.id} />
-                  ) : (
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: `linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)`,
-                      }}
-                    >
-                      <span style={{ color: '#fff', fontSize: '32px', fontWeight: 'bold' }}>
-                        {user.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-
-                  {!isLocalUser && user.audioTrack && (
-                    <AudioPlayer track={user.audioTrack} />
-                  )}
-
-                  {/* نوار اطلاعات پایین کارت */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent)',
-                      paddingTop: '16px',
-                      paddingBottom: '4px',
-                      paddingLeft: '6px',
-                      paddingRight: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '4px',
-                      zIndex: 20,
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: '#fff',
-                        fontSize: '12px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flex: 1,
-                        textAlign: 'right'
-                      }}
-                    >
-                      {user.name}
-                    </span>
-                    {user.isMuted ? (
-                      <span style={{ color: '#f87171', fontSize: '12px' }}>🔇</span>
-                    ) : (
-                      <span style={{ color: '#4ade80', fontSize: '12px', animation: 'pulse 1s infinite' }}>🎤</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-          </div>
-
-          <button
-            onClick={() => slide('right')}
-            style={{
-              position: 'absolute',
-              right: '4px',
-              zIndex: 10,
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              background: 'rgba(24,24,27,0.9)',
-              border: '1px solid #52525b',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              opacity: canRight ? 1 : 0,
-              pointerEvents: canRight ? 'auto' : 'none',
-              transition: 'all 0.2s',
-            }}
-          >
-            →
-          </button>
-        </div>
-
+    {/* Status Bar */}
+    <div className="vc-statusbar">
+      <div className="vc-statusbar-left">
+        <div
+          className="vc-dot"
+          style={{
+            background: connected ? '#22c55e' : '#ef4444',
+            animation: connected ? 'pulse 2s infinite' : 'none',
+          }}
+        />
+        <span className="vc-status-text">
+          {connected ? 'متصل' : 'قطع شده'}
+        </span>
       </div>
 
-      {/* User List Sidebar */}
-      <div style={{ width: '280px', background: '#18181b', borderLeft: '1px solid #27272a', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ color: '#e4e4e7', fontWeight: 'bold', fontSize: '14px' }}>لیست کاربران</h2>
-          <button
-            onClick={() => setInviteUser(true)}
-            style={{
-              fontSize: '12px',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#2563eb',
-              color: '#fff',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            افزودن کاربر+
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-          {users.map((user, _) => {
-            const isActive = selectedUser?.id === user.id;
-            return (
-              <button
-                key={user.id}
-                onClick={() => setSelectedUser(user)}
-                style={{
-                  width: '100%',
-                  textAlign: 'right',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  border: isActive ? '1px solid #3b82f6' : '1px solid #3f3f46',
-                  background: isActive ? 'rgba(37,99,235,0.2)' : '#27272a',
-                  color: isActive ? '#93c5fd' : '#e4e4e7',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {user.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '4px' }}>
-                      {user.isSpeaking ? 'در حال صحبت' : user.isMuted ? 'میکروفون خاموش' : 'آنلاین'}
-                    </div>
-                  </div>
-
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: 'rgba(37,99,235,0.2)',
-                        border: '1px solid rgba(59,130,246,0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#93c5fd',
-                        fontWeight: 'bold',
-                        fontSize: '14px',
-                      }}
-                    >
-                      {user.name.charAt(0)}
-                    </div>
-                    <span
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        border: '2px solid #18181b',
-                        background: user.isSpeaking ? '#4ade80' : '#71717a',
-                      }}
-                    />
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      <div className="vc-statusbar-actions">
+        <button
+          onClick={toggleMute}
+          className="vc-action-btn"
+          style={{ background: isMuted ? '#ef4444' : '#3f3f46' }}
+        >
+          {isMuted ? '🔇 میکروفون خاموش' : '🎤 میکروفون روشن'}
+        </button>
+        <button
+          onClick={toggleCamera}
+          className="vc-action-btn"
+          style={{ background: isCameraOff ? '#ef4444' : '#3f3f46' }}
+        >
+          {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
+        </button>
+        <button
+          onClick={leaveCall}
+          className="vc-action-btn"
+          style={{ background: '#dc2626' }}
+        >
+          🚪 خروج
+        </button>
       </div>
-
-
-      <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
-        <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
-      </Modal>
-
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        div::-webkit-scrollbar { width: 0; height: 0; }
-      `}</style>
     </div>
+
+    {error && (
+      <div className="vc-error">{error}</div>
+    )}
+
+    {/* User Slider */}
+    <div className="vc-slider">
+      <button
+        onClick={() => slide('left')}
+        className="vc-slide-btn vc-slide-left"
+        style={{
+          opacity: canLeft ? 1 : 0,
+          pointerEvents: canLeft ? 'auto' : 'none',
+        }}
+      >
+        ←
+      </button>
+
+      <div
+        ref={scrollRef}
+        onScroll={updateArrows}
+        className="vc-slider-track"
+      >
+        {users.map((user) => {
+          const isLocalUser = roomRef.current?.localParticipant.identity === user.id;
+
+          return (
+            <div
+              key={user.id}
+              className="vc-card"
+              style={{
+                border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
+                boxShadow: user.isSpeaking
+                  ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)'
+                  : 'none',
+              }}
+            >
+              {user.isSpeaking && (
+                <div className="vc-speaking-overlay" />
+              )}
+
+              {user.hasVideo && user.videoTrack ? (
+                <VideoPlayer track={user.videoTrack} participantId={user.id} />
+              ) : (
+                <div className="vc-avatar-fallback">
+                  <span className="vc-avatar-letter">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+
+              {!isLocalUser && user.audioTrack && (
+                <AudioPlayer track={user.audioTrack} />
+              )}
+
+              <div className="vc-card-footer">
+                <span className="vc-card-name">{user.name}</span>
+                {user.isMuted ? (
+                  <span style={{ color: '#f87171', fontSize: '12px' }}>🔇</span>
+                ) : (
+                  <span style={{ color: '#4ade80', fontSize: '12px', animation: 'pulse 1s infinite' }}>🎤</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <button
+        onClick={() => slide('right')}
+        className="vc-slide-btn vc-slide-right"
+        style={{
+          opacity: canRight ? 1 : 0,
+          pointerEvents: canRight ? 'auto' : 'none',
+        }}
+      >
+        →
+      </button>
+    </div>
+
+  </div>
+
+  {/* User List Sidebar */}
+  <div className="vc-sidebar">
+    <div className="vc-sidebar-header">
+      <h2 className="vc-sidebar-title">لیست کاربران</h2>
+      <button onClick={() => setInviteUser(true)} className="vc-invite-btn">
+        افزودن کاربر+
+      </button>
+    </div>
+
+    <div className="vc-sidebar-list">
+      {users.map((user, _) => {
+        const isActive = selectedUser?.id === user.id;
+        return (
+          <button
+            key={user.id}
+            onClick={() => setSelectedUser(user)}
+            className="vc-user-item"
+            style={{
+              border: isActive ? '1px solid #3b82f6' : '1px solid #3f3f46',
+              background: isActive ? 'rgba(37,99,235,0.2)' : '#27272a',
+              color: isActive ? '#93c5fd' : '#e4e4e7',
+            }}
+          >
+            <div className="vc-user-item-inner">
+              <div style={{ minWidth: 0 }}>
+                <div className="vc-user-name">{user.name}</div>
+                <div className="vc-user-status">
+                  {user.isSpeaking ? 'در حال صحبت' : user.isMuted ? 'میکروفون خاموش' : 'آنلاین'}
+                </div>
+              </div>
+
+              <div className="vc-user-avatar-wrap">
+                <div className="vc-user-avatar">
+                  {user.name.charAt(0)}
+                </div>
+                <span
+                  className="vc-user-badge"
+                  style={{ background: user.isSpeaking ? '#4ade80' : '#71717a' }}
+                />
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+
+  <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
+    <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
+  </Modal>
+
+  <style>{`
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    div::-webkit-scrollbar { width: 0; height: 0; }
+
+    .vc-root {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      background: #09090b;
+      color: #fff;
+      font-family: sans-serif;
+    }
+
+    .vc-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .vc-statusbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #18181b;
+      border-radius: 12px;
+      border: 1px solid #27272a;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .vc-statusbar-left { display: flex; align-items: center; gap: 8px; }
+    .vc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .vc-status-text { font-size: 14px; color: #a1a1aa; white-space: nowrap; }
+
+    .vc-statusbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .vc-action-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .vc-error {
+      padding: 12px;
+      background: #7f1d1d;
+      border: 1px solid #991b1b;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .vc-slider {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vc-slide-btn {
+      position: absolute;
+      z-index: 10;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(24,24,27,0.9);
+      border: 1px solid #52525b;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .vc-slide-left { left: 4px; }
+    .vc-slide-right { right: 4px; }
+
+    .vc-slider-track {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 8px 4px;
+      scrollbar-width: none;
+    }
+
+    .vc-card {
+      position: relative;
+      flex-shrink: 0;
+      scroll-snap-align: center;
+      border-radius: 12px;
+      overflow: hidden;
+      width: 500px;
+      height: 500px;
+      transition: all 0.3s;
+      cursor: pointer;
+      background: #18181b;
+    }
+
+    .vc-speaking-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      background: rgba(74,222,128,0.05);
+      z-index: 10;
+      pointer-events: none;
+      animation: pulse 1s infinite;
+    }
+
+    .vc-avatar-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    }
+    .vc-avatar-letter { color: #fff; font-size: 32px; font-weight: bold; }
+
+    .vc-card-footer {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent);
+      padding: 16px 6px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      z-index: 20;
+    }
+    .vc-card-name {
+      color: #fff;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      text-align: right;
+    }
+
+    .vc-sidebar {
+      width: 280px;
+      background: #18181b;
+      border-left: 1px solid #27272a;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .vc-sidebar-header { display: flex; align-items: center; justify-content: space-between; }
+    .vc-sidebar-title { color: #e4e4e7; font-weight: bold; font-size: 14px; }
+    .vc-invite-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .vc-sidebar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .vc-user-item {
+      width: 100%;
+      text-align: right;
+      padding: 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .vc-user-item-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .vc-user-name {
+      font-weight: 500;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .vc-user-status { font-size: 12px; color: #a1a1aa; margin-top: 4px; }
+
+    .vc-user-avatar-wrap { position: relative; flex-shrink: 0; }
+    .vc-user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(37,99,235,0.2);
+      border: 1px solid rgba(59,130,246,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #93c5fd;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .vc-user-badge {
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 2px solid #18181b;
+    }
+
+    /* ----------- Responsive ----------- */
+
+    @media (max-width: 1200px) {
+      .vc-card { width: 420px; height: 420px; }
+    }
+
+    @media (max-width: 1024px) {
+      .vc-card { width: 340px; height: 340px; }
+      .vc-sidebar { width: 220px; }
+    }
+
+    @media (max-width: 768px) {
+      .vc-root { flex-direction: column; height: auto; min-height: 100vh; }
+      .vc-main { padding: 10px; gap: 10px; order: 1; }
+      .vc-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #27272a;
+        order: 2;
+        max-height: 280px;
+      }
+      .vc-statusbar { padding: 10px; }
+      .vc-statusbar-actions { width: 100%; justify-content: space-between; }
+      .vc-action-btn { flex: 1; padding: 8px 6px; font-size: 11px; text-align: center; }
+      .vc-status-text { font-size: 12px; }
+
+      .vc-card { width: 80vw; height: 80vw; max-width: 380px; max-height: 380px; }
+      .vc-slide-btn { width: 24px; height: 24px; }
+    }
+
+    @media (max-width: 420px) {
+      .vc-card { width: 88vw; height: 88vw; }
+      .vc-action-btn { font-size: 10px; padding: 8px 4px; }
+      .vc-sidebar { max-height: 220px; }
+    }
+  `}</style>
+
+</div>
+
   );
 };
 
