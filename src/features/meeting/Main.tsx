@@ -223,12 +223,74 @@ const Main: React.FC = () => {
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
 
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
+  const [isSwitching, setIsSwitching] = useState<boolean>(false);
+
   const updateArrows = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     setCanLeft(el.scrollLeft > 8);
     setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
   }, []);
+
+  const fetchVideoDevices = useCallback(async () => {
+    try {
+      // دریافت تمام دستگاه‌های ورودی تصویر
+      const devices = await Room.getLocalDevices('videoinput');
+      setVideoDevices(devices);
+
+      // اگر دوربینی وجود دارد و هنوز دوربینی انتخاب نشده، اولی را ست کن
+      if (devices.length > 0 && !currentDeviceId) {
+        // معمولاً LiveKit خودش دیوایس پیش‌فرض را انتخاب می‌کند، 
+        // اما داشتن ID آن برای چرخش بین دوربین‌ها مفید است.
+        setCurrentDeviceId(devices[0].deviceId);
+      }
+    } catch (error) {
+      console.error("خطا در دریافت لیست دوربین‌ها:", error);
+    }
+  }, [currentDeviceId]);
+
+  // فراخوانی این تابع بعد از وصل شدن به روم یا Mount شدن کامپوننت
+  useEffect(() => {
+    fetchVideoDevices();
+
+    // لیسنر برای زمانی که کاربر دستگاه جدیدی (مثل وب‌کم USB) متصل می‌کند
+    navigator.mediaDevices.addEventListener('devicechange', fetchVideoDevices);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', fetchVideoDevices);
+    };
+  }, [fetchVideoDevices]);
+  const handleSwitchCamera = async () => {
+    const room = roomRef.current;
+
+    // اگر رومی وجود ندارد، یا در حال سوئیچ هستیم، یا فقط یک دوربین داریم، کاری نکن
+    if (!room || isSwitching || videoDevices.length <= 1) return;
+
+    setIsSwitching(true);
+
+    try {
+      // پیدا کردن ایندکس دوربین فعلی
+      const currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+
+      // محاسبه ایندکس دوربین بعدی (اگر به آخر لیست رسیدیم، برگرد به اولی)
+      const nextIndex = (currentIndex + 1) % videoDevices.length;
+      const nextDevice = videoDevices[nextIndex];
+
+      // سوئیچ کردن دوربین از طریق API داخلی LiveKit
+      await room.switchActiveDevice('videoinput', nextDevice.deviceId);
+
+      // آپدیت کردن استیت با ID دوربین جدید
+      setCurrentDeviceId(nextDevice.deviceId);
+      console.log(`دوربین با موفقیت به ${nextDevice.label || 'دستگاه جدید'} تغییر یافت.`);
+
+    } catch (error) {
+      console.error("خطا در هنگام جابه‌جایی دوربین:", error);
+      alert("مشکلی در تغییر دوربین پیش آمد.");
+    } finally {
+      setIsSwitching(false);
+    }
+  };
 
   useEffect(() => {
     updateArrows();
@@ -239,24 +301,23 @@ const Main: React.FC = () => {
     setTimeout(updateArrows, 350);
   };
 
-   const buildUserList = useCallback(() => {
+  const buildUserList = useCallback(() => {
     const room = roomRef.current;
     if (!room) return;
 
     const allUsers: User[] = [];
-    
+
     // تعریف صریح نوع آرایه به عنوان Participant[]
     const participants: Participant[] = [
-      room.localParticipant, 
+      room.localParticipant,
       ...Array.from(room.remoteParticipants.values())
     ];
 
     participants.forEach((p) => {
-      // استفاده از Type Assertion برای رفع خطای Array.from در تایپ‌اسکریپت
       const activeVideoPub = Array.from(
         p.videoTrackPublications.values() as Iterable<TrackPublication>
       ).find((pub) => pub.track && !pub.isMuted);
-      
+
       const activeAudioPub = Array.from(
         p.audioTrackPublications.values() as Iterable<TrackPublication>
       ).find((pub) => pub.track && !pub.isMuted);
@@ -264,13 +325,13 @@ const Main: React.FC = () => {
       allUsers.push({
         id: p.identity,
         name: p.name || p.identity,
-        
+
         hasVideo: !!activeVideoPub,
-        videoTrack: activeVideoPub?.track, 
-        
-        isMuted: !activeAudioPub, 
-        audioTrack: activeAudioPub?.track, 
-        
+        videoTrack: activeVideoPub?.track,
+
+        isMuted: !activeAudioPub,
+        audioTrack: activeAudioPub?.track,
+
         isSpeaking: p.isSpeaking,
       });
     });
@@ -469,184 +530,194 @@ const Main: React.FC = () => {
     setInviteUser(false);
   };
   return (
-   <div className="vc-root">
+    <div className="vc-root">
 
-  {/* Main Video Area */}
-  <div className="vc-main">
+      {/* Main Video Area */}
+      <div className="vc-main">
 
-    {/* Status Bar */}
-    <div className="vc-statusbar">
-      <div className="vc-statusbar-left">
-        <div
-          className="vc-dot"
-          style={{
-            background: connected ? '#22c55e' : '#ef4444',
-            animation: connected ? 'pulse 2s infinite' : 'none',
-          }}
-        />
-        <span className="vc-status-text">
-          {connected ? 'متصل' : 'قطع شده'}
-        </span>
-      </div>
-
-      <div className="vc-statusbar-actions">
-        <button
-          onClick={toggleMute}
-          className="vc-action-btn"
-          style={{ background: isMuted ? '#ef4444' : '#3f3f46' }}
-        >
-          {isMuted ? '🔇 میکروفون خاموش' : '🎤 میکروفون روشن'}
-        </button>
-        <button
-          onClick={toggleCamera}
-          className="vc-action-btn"
-          style={{ background: isCameraOff ? '#ef4444' : '#3f3f46' }}
-        >
-          {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
-        </button>
-        <button
-          onClick={leaveCall}
-          className="vc-action-btn"
-          style={{ background: '#dc2626' }}
-        >
-          🚪 خروج
-        </button>
-      </div>
-    </div>
-
-    {error && (
-      <div className="vc-error">{error}</div>
-    )}
-
-    {/* User Slider */}
-    <div className="vc-slider">
-      <button
-        onClick={() => slide('left')}
-        className="vc-slide-btn vc-slide-left"
-        style={{
-          opacity: canLeft ? 1 : 0,
-          pointerEvents: canLeft ? 'auto' : 'none',
-        }}
-      >
-        ←
-      </button>
-
-      <div
-        ref={scrollRef}
-        onScroll={updateArrows}
-        className="vc-slider-track"
-      >
-        {users.map((user) => {
-          const isLocalUser = roomRef.current?.localParticipant.identity === user.id;
-
-          return (
+        {/* Status Bar */}
+        <div className="vc-statusbar">
+          <div className="vc-statusbar-left">
             <div
-              key={user.id}
-              className="vc-card"
+              className="vc-dot"
               style={{
-                border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
-                boxShadow: user.isSpeaking
-                  ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)'
-                  : 'none',
+                background: connected ? '#22c55e' : '#ef4444',
+                animation: connected ? 'pulse 2s infinite' : 'none',
               }}
+            />
+            <span className="vc-status-text">
+              {connected ? 'متصل' : 'قطع شده'}
+            </span>
+          </div>
+
+          <div className="vc-statusbar-actions">
+            <button
+              onClick={toggleMute}
+              className="vc-action-btn"
+              style={{ background: isMuted ? '#ef4444' : '#3f3f46' }}
             >
-              {user.isSpeaking && (
-                <div className="vc-speaking-overlay" />
-              )}
+              {isMuted ? '🔇 میکروفون خاموش' : '🎤 میکروفون روشن'}
+            </button>
+            <button
+              onClick={toggleCamera}
+              className="vc-action-btn"
+              style={{ background: isCameraOff ? '#ef4444' : '#3f3f46' }}
+            >
+              {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
+            </button>
+            {videoDevices.length > 1 && (
+              <button
+                onClick={handleSwitchCamera}
+                disabled={isSwitching}
+                className={`px-4 py-2 rounded-lg font-bold text-white transition-all ${isSwitching ? 'bg-gray-500 cursor-wait' : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+              >
+                {isSwitching ? 'در حال چرخش...' : 'چرخش دوربین'}
+              </button>
+            )}
+            <button
+              onClick={leaveCall}
+              className="vc-action-btn"
+              style={{ background: '#dc2626' }}
+            >
+              🚪 خروج
+            </button>
+          </div>
+        </div>
 
-              {user.hasVideo && user.videoTrack ? (
-                <VideoPlayer track={user.videoTrack} participantId={user.id} />
-              ) : (
-                <div className="vc-avatar-fallback">
-                  <span className="vc-avatar-letter">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+        {error && (
+          <div className="vc-error">{error}</div>
+        )}
 
-              {!isLocalUser && user.audioTrack && (
-                <AudioPlayer track={user.audioTrack} />
-              )}
-
-              <div className="vc-card-footer">
-                <span className="vc-card-name">{user.name}</span>
-                {user.isMuted ? (
-                  <span style={{ color: '#f87171', fontSize: '12px' }}>🔇</span>
-                ) : (
-                  <span style={{ color: '#4ade80', fontSize: '12px', animation: 'pulse 1s infinite' }}>🎤</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <button
-        onClick={() => slide('right')}
-        className="vc-slide-btn vc-slide-right"
-        style={{
-          opacity: canRight ? 1 : 0,
-          pointerEvents: canRight ? 'auto' : 'none',
-        }}
-      >
-        →
-      </button>
-    </div>
-
-  </div>
-
-  {/* User List Sidebar */}
-  <div className="vc-sidebar">
-    <div className="vc-sidebar-header">
-      <h2 className="vc-sidebar-title">لیست کاربران</h2>
-      <button onClick={() => setInviteUser(true)} className="vc-invite-btn">
-        افزودن کاربر+
-      </button>
-    </div>
-
-    <div className="vc-sidebar-list">
-      {users.map((user, _) => {
-        const isActive = selectedUser?.id === user.id;
-        return (
+        {/* User Slider */}
+        <div className="vc-slider">
           <button
-            key={user.id}
-            onClick={() => setSelectedUser(user)}
-            className="vc-user-item"
+            onClick={() => slide('left')}
+            className="vc-slide-btn vc-slide-left"
             style={{
-              border: isActive ? '1px solid #3b82f6' : '1px solid #3f3f46',
-              background: isActive ? 'rgba(37,99,235,0.2)' : '#27272a',
-              color: isActive ? '#93c5fd' : '#e4e4e7',
+              opacity: canLeft ? 1 : 0,
+              pointerEvents: canLeft ? 'auto' : 'none',
             }}
           >
-            <div className="vc-user-item-inner">
-              <div style={{ minWidth: 0 }}>
-                <div className="vc-user-name">{user.name}</div>
-                <div className="vc-user-status">
-                  {user.isSpeaking ? 'در حال صحبت' : user.isMuted ? 'میکروفون خاموش' : 'آنلاین'}
-                </div>
-              </div>
-
-              <div className="vc-user-avatar-wrap">
-                <div className="vc-user-avatar">
-                  {user.name.charAt(0)}
-                </div>
-                <span
-                  className="vc-user-badge"
-                  style={{ background: user.isSpeaking ? '#4ade80' : '#71717a' }}
-                />
-              </div>
-            </div>
+            ←
           </button>
-        );
-      })}
-    </div>
-  </div>
 
-  <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
-    <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
-  </Modal>
+          <div
+            ref={scrollRef}
+            onScroll={updateArrows}
+            className="vc-slider-track"
+          >
+            {users.map((user) => {
+              const isLocalUser = roomRef.current?.localParticipant.identity === user.id;
 
-  <style>{`
+              return (
+                <div
+                  key={user.id}
+                  className="vc-card"
+                  style={{
+                    border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
+                    boxShadow: user.isSpeaking
+                      ? '0 0 0 3px rgba(74,222,128,0.3), 0 0 20px rgba(74,222,128,0.2)'
+                      : 'none',
+                  }}
+                >
+                  {user.isSpeaking && (
+                    <div className="vc-speaking-overlay" />
+                  )}
+
+                  {user.hasVideo && user.videoTrack ? (
+                    <VideoPlayer track={user.videoTrack} participantId={user.id} />
+                  ) : (
+                    <div className="vc-avatar-fallback">
+                      <span className="vc-avatar-letter">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {!isLocalUser && user.audioTrack && (
+                    <AudioPlayer track={user.audioTrack} />
+                  )}
+
+                  <div className="vc-card-footer">
+                    <span className="vc-card-name">{user.name}</span>
+                    {user.isMuted ? (
+                      <span style={{ color: '#f87171', fontSize: '12px' }}>🔇</span>
+                    ) : (
+                      <span style={{ color: '#4ade80', fontSize: '12px', animation: 'pulse 1s infinite' }}>🎤</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => slide('right')}
+            className="vc-slide-btn vc-slide-right"
+            style={{
+              opacity: canRight ? 1 : 0,
+              pointerEvents: canRight ? 'auto' : 'none',
+            }}
+          >
+            →
+          </button>
+        </div>
+
+      </div>
+
+      {/* User List Sidebar */}
+      <div className="vc-sidebar">
+        <div className="vc-sidebar-header">
+          <h2 className="vc-sidebar-title">لیست کاربران</h2>
+          <button onClick={() => setInviteUser(true)} className="vc-invite-btn">
+            افزودن کاربر+
+          </button>
+        </div>
+
+        <div className="vc-sidebar-list">
+          {users.map((user, _) => {
+            const isActive = selectedUser?.id === user.id;
+            return (
+              <button
+                key={user.id}
+                onClick={() => setSelectedUser(user)}
+                className="vc-user-item"
+                style={{
+                  border: isActive ? '1px solid #3b82f6' : '1px solid #3f3f46',
+                  background: isActive ? 'rgba(37,99,235,0.2)' : '#27272a',
+                  color: isActive ? '#93c5fd' : '#e4e4e7',
+                }}
+              >
+                <div className="vc-user-item-inner">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="vc-user-name">{user.name}</div>
+                    <div className="vc-user-status">
+                      {user.isSpeaking ? 'در حال صحبت' : user.isMuted ? 'میکروفون خاموش' : 'آنلاین'}
+                    </div>
+                  </div>
+
+                  <div className="vc-user-avatar-wrap">
+                    <div className="vc-user-avatar">
+                      {user.name.charAt(0)}
+                    </div>
+                    <span
+                      className="vc-user-badge"
+                      style={{ background: user.isSpeaking ? '#4ade80' : '#71717a' }}
+                    />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
+        <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
+      </Modal>
+
+      <style>{`
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
@@ -907,7 +978,7 @@ const Main: React.FC = () => {
     }
   `}</style>
 
-</div>
+    </div>
 
   );
 };
