@@ -16,9 +16,11 @@ const toBool = (v: string | undefined): boolean | undefined =>
 type MemberFormProps = {
   onSubmit: (data: MemberFormData) => void;
   onClose?: () => void;
+  setShowLink?: (value: boolean) => void;
+  setCopyLink?: (value: string) => void;
 };
 
-export function MemberForm({ onSubmit, onClose }: MemberFormProps) {
+export function MemberForm({ onSubmit, onClose , setShowLink,setCopyLink }: MemberFormProps) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [receiveMedia, setReceiveMedia] = useState<string>("yes");
@@ -60,6 +62,8 @@ export function MemberForm({ onSubmit, onClose }: MemberFormProps) {
       })
       console.log(res);
       toast.success("پیامک برای شخص مورد نظر ارسال گردید")
+      setShowLink?.(true);
+      setCopyLink?.(`https://asaflive.ir/session/guest?token=${res?.data?.accessToken}`)
     } catch (error) {
       toast.error("خطا در افزودن کاربر به جلسه")
     }
@@ -87,7 +91,7 @@ export function MemberForm({ onSubmit, onClose }: MemberFormProps) {
 
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">افزودن عضو جدید</h2>
-              {onClose && (
+              {onClose  && (
                 <button
                   type="button"
                   onClick={onClose}

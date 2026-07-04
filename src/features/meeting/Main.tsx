@@ -191,6 +191,7 @@ import { MemberForm } from '../../shared/MemberForm.js';
 import VideoPlayer from './VideoPlayer.js';
 import { AudioPlayer } from './AudioPlayer.js';
 import { Participant } from 'livekit-client';
+import toast from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -224,6 +225,8 @@ const Main: React.FC = () => {
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [inviteUser, setInviteUser] = useState(false);
+  const [showLink, setShowLink] = useState(false);
+  const [copyLink, setCopyLink] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -233,11 +236,21 @@ const Main: React.FC = () => {
   const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
   const [isSwitching, setIsSwitching] = useState<boolean>(false);
 
+  const [expandedUser, setExpandedUser] = useState<User | null>(null);
+
   const updateArrows = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     setCanLeft(el.scrollLeft > 8);
     setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpandedUser(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const fetchVideoDevices = useCallback(async () => {
@@ -400,11 +413,8 @@ const Main: React.FC = () => {
     }
 
     const room = new Room({
-      // 👈 فعال‌سازی تطبیق خودکار کیفیت با سایز صفحه نمایش کاربر هدف
-      adaptiveStream: true, 
-      // 👈 ارسال چند کیفیت مختلف به سرور تا هر کاربر بر اساس سرعت اینترنتش بهترین را دریافت کند
+      adaptiveStream: true,
       dynacast: true,
-      // 👈 تنظیمات پیش‌فرض برای انتشار ویدیو
       publishDefaults: {
         simulcast: true,
         videoSimulcastLayers: [
@@ -643,6 +653,7 @@ const Main: React.FC = () => {
                 <div
                   key={user.id}
                   className="vc-card"
+                  onClick={() => setExpandedUser(user)}
                   style={{
                     border: user.isSpeaking ? '2px solid #4ade80' : '1px solid #3f3f46',
                     boxShadow: user.isSpeaking
@@ -692,6 +703,73 @@ const Main: React.FC = () => {
             →
           </button>
         </div>
+        {expandedUser && (
+          <div
+            onClick={() => setExpandedUser(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center 
+                     bg-black/80 backdrop-blur-sm
+                     animate-in fade-in duration-200"
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              className="relative w-[95vw] h-[90vh] max-w-7xl
+                       bg-gray-900 rounded-2xl overflow-hidden
+                       border border-gray-700 shadow-2xl
+                       animate-in zoom-in-95 duration-300"
+            >
+              {/* Header */}
+              <div className="absolute top-0 left-0 right-0 z-10
+                            bg-gradient-to-b from-black/80 to-transparent
+                            px-6 py-4 flex items-center justify-between">
+                <span className="text-xl font-semibold text-white">
+                  {expandedUser.name}
+                </span>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-400 flex items-center gap-2">
+                    {expandedUser.isSpeaking ? (
+                      <>🎤 <span>در حال صحبت</span></>
+                    ) : expandedUser.isMuted ? (
+                      <>🔇 <span>میکروفون خاموش</span></>
+                    ) : (
+                      <>🟢 <span>آنلاین</span></>
+                    )}
+                  </span>
+
+                  <button
+                    onClick={() => setExpandedUser(null)}
+                    className="w-10 h-10 rounded-full bg-red-500/20 hover:bg-red-500/30
+                             text-red-400 hover:text-red-300
+                             transition-colors duration-200
+                             flex items-center justify-center text-xl font-light"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Video Container */}
+              <div className="w-full h-full flex items-center justify-center bg-gray-950">
+                {expandedUser.hasVideo && expandedUser.videoTrack ? (
+                  <VideoPlayer
+                    track={expandedUser.videoTrack}
+                    participantId={`${expandedUser.id}-expanded`}
+                  // className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600
+                                  flex items-center justify-center text-white text-5xl font-bold
+                                  shadow-2xl shadow-blue-500/50">
+                      {expandedUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-gray-400 text-lg">دوربین خاموش است</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -743,7 +821,55 @@ const Main: React.FC = () => {
       </div>
 
       <Modal isOpen={inviteUser} onClose={() => setInviteUser(false)}>
-        <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} />
+        <MemberForm onSubmit={handleSubmit} onClose={() => setInviteUser(false)} setShowLink={setShowLink} setCopyLink={setCopyLink} />
+      </Modal>
+      <Modal isOpen={showLink} onClose={() => setShowLink(false)}>
+        <div className="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-2xl p-8 w-full max-w-lg mx-auto shadow-2xl border border-zinc-700/50">
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-center text-zinc-100 mb-6">
+              لینک دعوت
+            </h3>
+
+            <div className="relative group">
+              <input
+                type="text"
+                value={copyLink}
+                readOnly
+                className="w-full px-4 py-3.5 pl-14 bg-zinc-950/60 border border-zinc-700 rounded-xl text-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all cursor-pointer select-all"
+                onClick={(e) => e.currentTarget.select()}
+              />
+
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(copyLink);
+                  toast.success("لینک با موفقیت کپی شد")
+                  setShowLink(false);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-lg transition-all duration-200 shadow-lg hover:shadow-blue-500/25 group-hover:scale-105"
+                title="کپی لینک"
+              >
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-500 text-center mt-3">
+              کلیک روی دکمه برای کپی و بستن خودکار
+            </p>
+          </div>
+        </div>
+
       </Modal>
 
       <style>{`
