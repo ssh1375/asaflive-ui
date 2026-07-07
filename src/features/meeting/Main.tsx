@@ -330,11 +330,9 @@ const Main: React.FC = () => {
     ];
 
     const allUsers: User[] = participants.map((p) => {
-      // دریافت مستقیم وب‌کم و میکروفون با استفاده از متدهای بومی LiveKit
       const cameraPub = p.getTrackPublication(Track.Source.Camera);
       const micPub = p.getTrackPublication(Track.Source.Microphone);
 
-      // بررسی اینکه آیا ترک وجود دارد و Mute نیست
       const isCameraActive = cameraPub && cameraPub.track && !cameraPub.isMuted;
       const isMicActive = micPub && micPub.track && !micPub.isMuted;
 
@@ -413,19 +411,19 @@ const Main: React.FC = () => {
     }
 
     const room = new Room({
-      adaptiveStream: true,
-      dynacast: true,
-      publishDefaults: {
-        simulcast: true,
-        videoSimulcastLayers: [
-          VideoPresets.h1080,
-          VideoPresets.h720,
-          VideoPresets.h360,
-        ],
-      },
+      // adaptiveStream: true,
+      // dynacast: true,
+      // publishDefaults: {
+      //   simulcast: true,
+      //   videoSimulcastLayers: [
+      //     VideoPresets.h1080,
+      //     VideoPresets.h720,
+      //     VideoPresets.h360,
+      //   ],
+      // },
       // 👈 تنظیمات پیش‌فرض وب‌کم
       videoCaptureDefaults: {
-        resolution: VideoPresets.h720.resolution,
+        resolution: VideoPresets.h540.resolution,
       },
     });
     roomRef.current = room;
@@ -453,8 +451,7 @@ const Main: React.FC = () => {
       try {
         // اجبار به رزولوشن پایین
         await room.localParticipant.setCameraEnabled(true, {
-          // resolution: { width: 640, height: 480 }
-          resolution: VideoPresets.h720.resolution
+          resolution: { width: 640, height: 480 }
         });
         console.log('✅ Camera OK');
         setIsCameraOff(false);
@@ -465,9 +462,7 @@ const Main: React.FC = () => {
         // تلاش دوم با کیفیت پایین‌تر
         try {
           await room.localParticipant.setCameraEnabled(true, {
-            // resolution: { width: 320, height: 240 }
-            resolution: VideoPresets.h540.resolution,
-
+            resolution: { width: 320, height: 240 }
           });
           console.log('✅ Camera OK (low res)');
           setIsCameraOff(false);
@@ -476,6 +471,32 @@ const Main: React.FC = () => {
           setError('دوربین غیرفعال است');
         }
       }
+      // try {
+      //   // اجبار به رزولوشن پایین
+      //   await room.localParticipant.setCameraEnabled(true, {
+      //     // resolution: { width: 640, height: 480 }
+      //     resolution: VideoPresets.h720.resolution
+      //   });
+      //   console.log('✅ Camera OK');
+      //   setIsCameraOff(false);
+      // } catch (e: any) {
+      //   console.error('❌ Camera failed:', e.name, e.message);
+      //   setIsCameraOff(true);
+
+      //   // تلاش دوم با کیفیت پایین‌تر
+      //   try {
+      //     await room.localParticipant.setCameraEnabled(true, {
+      //       // resolution: { width: 320, height: 240 }
+      //       resolution: VideoPresets.h540.resolution,
+
+      //     });
+      //     console.log('✅ Camera OK (low res)');
+      //     setIsCameraOff(false);
+      //   } catch (e2: any) {
+      //     console.error('❌ Camera totally failed');
+      //     setError('دوربین غیرفعال است');
+      //   }
+      // }
 
       buildUserList();
     });
