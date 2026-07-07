@@ -411,16 +411,16 @@ const Main: React.FC = () => {
     }
 
     const room = new Room({
-      // adaptiveStream: true,
-      // dynacast: true,
-      // publishDefaults: {
-      //   simulcast: true,
-      //   videoSimulcastLayers: [
-      //     VideoPresets.h1080,
-      //     VideoPresets.h720,
-      //     VideoPresets.h360,
-      //   ],
-      // },
+      adaptiveStream: true,
+      dynacast: true,
+      publishDefaults: {
+        simulcast: true,
+        videoSimulcastLayers: [
+          VideoPresets.h1080,
+          VideoPresets.h720,
+          VideoPresets.h360,
+        ],
+      },
       // 👈 تنظیمات پیش‌فرض وب‌کم
       videoCaptureDefaults: {
         resolution: VideoPresets.h540.resolution,
@@ -448,10 +448,12 @@ const Main: React.FC = () => {
       // دوربین با تأخیر بیشتر
       await new Promise(resolve => setTimeout(resolve, 300));
 
+  
       try {
         // اجبار به رزولوشن پایین
         await room.localParticipant.setCameraEnabled(true, {
-          resolution: { width: 640, height: 480 }
+          // resolution: { width: 640, height: 480 }
+          resolution: VideoPresets.h720.resolution
         });
         console.log('✅ Camera OK');
         setIsCameraOff(false);
@@ -462,7 +464,9 @@ const Main: React.FC = () => {
         // تلاش دوم با کیفیت پایین‌تر
         try {
           await room.localParticipant.setCameraEnabled(true, {
-            resolution: { width: 320, height: 240 }
+            // resolution: { width: 320, height: 240 }
+            resolution: VideoPresets.h540.resolution,
+
           });
           console.log('✅ Camera OK (low res)');
           setIsCameraOff(false);
@@ -471,32 +475,6 @@ const Main: React.FC = () => {
           setError('دوربین غیرفعال است');
         }
       }
-      // try {
-      //   // اجبار به رزولوشن پایین
-      //   await room.localParticipant.setCameraEnabled(true, {
-      //     // resolution: { width: 640, height: 480 }
-      //     resolution: VideoPresets.h720.resolution
-      //   });
-      //   console.log('✅ Camera OK');
-      //   setIsCameraOff(false);
-      // } catch (e: any) {
-      //   console.error('❌ Camera failed:', e.name, e.message);
-      //   setIsCameraOff(true);
-
-      //   // تلاش دوم با کیفیت پایین‌تر
-      //   try {
-      //     await room.localParticipant.setCameraEnabled(true, {
-      //       // resolution: { width: 320, height: 240 }
-      //       resolution: VideoPresets.h540.resolution,
-
-      //     });
-      //     console.log('✅ Camera OK (low res)');
-      //     setIsCameraOff(false);
-      //   } catch (e2: any) {
-      //     console.error('❌ Camera totally failed');
-      //     setError('دوربین غیرفعال است');
-      //   }
-      // }
 
       buildUserList();
     });
