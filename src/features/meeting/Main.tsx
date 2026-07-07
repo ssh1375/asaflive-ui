@@ -423,7 +423,7 @@ const Main: React.FC = () => {
       },
       // 👈 تنظیمات پیش‌فرض وب‌کم
       videoCaptureDefaults: {
-        resolution: VideoPresets.h540.resolution,
+        resolution: VideoPresets.h720.resolution,
       },
     });
     roomRef.current = room;
@@ -448,7 +448,7 @@ const Main: React.FC = () => {
       // دوربین با تأخیر بیشتر
       await new Promise(resolve => setTimeout(resolve, 300));
 
-  
+
       try {
         // اجبار به رزولوشن پایین
         await room.localParticipant.setCameraEnabled(true, {
@@ -588,7 +588,7 @@ const Main: React.FC = () => {
             </span>
           </div>
 
-          <div className="vc-statusbar-actions">
+          <div className="vc-statusbar-actions ">
             <button
               onClick={toggleMute}
               className="vc-action-btn"
@@ -600,6 +600,18 @@ const Main: React.FC = () => {
               onClick={toggleCamera}
               className="vc-action-btn"
               style={{ background: isCameraOff ? '#ef4444' : '#3f3f46' }}
+            >
+              {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
+            </button>
+            <button
+              onClick={toggleCamera}
+              className="vc-action-btn"
+              style={{
+                background: isCameraOff ? '#ef4444' : '#22c55e',
+                color: 'white',
+                transition: 'all 0.2s ease'
+              }}
+              title={isCameraOff ? "روشن کردن دوربین" : "خاموش کردن دوربین"}
             >
               {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
             </button>
