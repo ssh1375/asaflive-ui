@@ -206,6 +206,10 @@ interface User {
   isMuted: boolean;
   isSpeaking: boolean;
 }
+interface VideoDeviceWithQuality {
+  device: MediaDeviceInfo;
+  quality: 'عالی' | 'خوب' | 'معمولی';
+}
 
 // const AVATAR_COLORS = [
 //   'from-indigo-600 to-indigo-800',
@@ -228,11 +232,13 @@ const Main: React.FC = () => {
   const [showLink, setShowLink] = useState(false);
   const [copyLink, setCopyLink] = useState("");
 
+  
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
 
-  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [videoDevices, setVideoDevices] = useState<VideoDeviceWithQuality[]>([]);
   const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
   const [isSwitching, setIsSwitching] = useState<boolean>(false);
 
@@ -254,21 +260,61 @@ const Main: React.FC = () => {
   }, []);
 
   const fetchVideoDevices = useCallback(async () => {
-    try {
-      // دریافت تمام دستگاه‌های ورودی تصویر
-      const devices = await Room.getLocalDevices('videoinput');
-      setVideoDevices(devices);
+  try {
+    // ۱. دریافت تمام سخت‌افزارهای دوربین موجود
+    const devices = await Room.getLocalDevices('videoinput');
+    const devicesWithQuality: VideoDeviceWithQuality[] = [];
 
-      // اگر دوربینی وجود دارد و هنوز دوربینی انتخاب نشده، اولی را ست کن
-      if (devices.length > 0 && !currentDeviceId) {
-        // معمولاً LiveKit خودش دیوایس پیش‌فرض را انتخاب می‌کند، 
-        // اما داشتن ID آن برای چرخش بین دوربین‌ها مفید است.
-        setCurrentDeviceId(devices[0].deviceId);
+    // ۲. بررسی تک‌تک دوربین‌ها برای تخمین کیفیت
+    for (const device of devices) {
+      let qualityStr: 'عالی' | 'خوب' | 'معمولی' = 'معمولی';
+
+      try {
+        // باز کردن موقت دوربین با درخواست کیفیت ایده آل (4K)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: device.deviceId },
+            width: { ideal: 3840 },
+            height: { ideal: 2160 }
+          }
+        });
+
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        const width = settings.width || 0;
+        const height = settings.height || 0;
+
+        // دسته‌بندی کیفیت بر اساس رزولوشن دریافتی واقعی
+        if (width >= 1920 && height >= 1080) {
+          qualityStr = 'عالی'; // Full HD یا بالاتر
+        } else if (width >= 1280 && height >= 720) {
+          qualityStr = 'خوب';  // HD
+        } else {
+          qualityStr = 'معمولی'; // SD
+        }
+
+        // حتماً تراک تستی را می‌بندیم تا دوربین آزاد شود
+        track.stop();
+      } catch (e) {
+        console.warn(`امکان سنجش کیفیت برای دوربین ${device.label} وجود نداشت:`, e);
       }
-    } catch (error) {
-      console.error("خطا در دریافت لیست دوربین‌ها:", error);
+
+      devicesWithQuality.push({
+        device,
+        quality: qualityStr
+      });
     }
-  }, [currentDeviceId]);
+
+    setVideoDevices(devicesWithQuality);
+
+    // انتخاب پیش‌فرض اولین دوربین در صورت عدم انتخاب قبلی
+    if (devicesWithQuality.length > 0 && !currentDeviceId) {
+      setCurrentDeviceId(devicesWithQuality[0].device.deviceId);
+    }
+  } catch (error) {
+    console.error("خطا در دریافت لیست دوربین‌ها:", error);
+  }
+}, [currentDeviceId]);
 
   // فراخوانی این تابع بعد از وصل شدن به روم یا Mount شدن کامپوننت
   useEffect(() => {
@@ -280,36 +326,36 @@ const Main: React.FC = () => {
       navigator.mediaDevices.removeEventListener('devicechange', fetchVideoDevices);
     };
   }, [fetchVideoDevices]);
-  const handleSwitchCamera = async () => {
-    const room = roomRef.current;
+  // const handleSwitchCamera = async () => {
+  //   const room = roomRef.current;
 
-    // اگر رومی وجود ندارد، یا در حال سوئیچ هستیم، یا فقط یک دوربین داریم، کاری نکن
-    if (!room || isSwitching || videoDevices.length <= 1) return;
+  //   // اگر رومی وجود ندارد، یا در حال سوئیچ هستیم، یا فقط یک دوربین داریم، کاری نکن
+  //   if (!room || isSwitching || videoDevices.length <= 1) return;
 
-    setIsSwitching(true);
+  //   setIsSwitching(true);
 
-    try {
-      // پیدا کردن ایندکس دوربین فعلی
-      const currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+  //   try {
+  //     // پیدا کردن ایندکس دوربین فعلی
+  //     const currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
 
-      // محاسبه ایندکس دوربین بعدی (اگر به آخر لیست رسیدیم، برگرد به اولی)
-      const nextIndex = (currentIndex + 1) % videoDevices.length;
-      const nextDevice = videoDevices[nextIndex];
+  //     // محاسبه ایندکس دوربین بعدی (اگر به آخر لیست رسیدیم، برگرد به اولی)
+  //     const nextIndex = (currentIndex + 1) % videoDevices.length;
+  //     const nextDevice = videoDevices[nextIndex];
 
-      // سوئیچ کردن دوربین از طریق API داخلی LiveKit
-      await room.switchActiveDevice('videoinput', nextDevice.deviceId);
+  //     // سوئیچ کردن دوربین از طریق API داخلی LiveKit
+  //     await room.switchActiveDevice('videoinput', nextDevice.deviceId);
 
-      // آپدیت کردن استیت با ID دوربین جدید
-      setCurrentDeviceId(nextDevice.deviceId);
-      console.log(`دوربین با موفقیت به ${nextDevice.label || 'دستگاه جدید'} تغییر یافت.`);
+  //     // آپدیت کردن استیت با ID دوربین جدید
+  //     setCurrentDeviceId(nextDevice.deviceId);
+  //     console.log(`دوربین با موفقیت به ${nextDevice.label || 'دستگاه جدید'} تغییر یافت.`);
 
-    } catch (error) {
-      console.error("خطا در هنگام جابه‌جایی دوربین:", error);
-      alert("مشکلی در تغییر دوربین پیش آمد.");
-    } finally {
-      setIsSwitching(false);
-    }
-  };
+  //   } catch (error) {
+  //     console.error("خطا در هنگام جابه‌جایی دوربین:", error);
+  //     alert("مشکلی در تغییر دوربین پیش آمد.");
+  //   } finally {
+  //     setIsSwitching(false);
+  //   }
+  // };
 
   useEffect(() => {
     updateArrows();
@@ -357,7 +403,28 @@ const Main: React.FC = () => {
     setUsers(allUsers);
   }, []);
 
+  const handleSelectCamera = async (deviceId: string) => {
+  const room = roomRef.current;
 
+  // اگر رومی وجود ندارد، یا در حال سوئیچ هستیم، یا دوربین انتخابی همان دوربین فعلی است کاری نکن
+  if (!room || isSwitching || deviceId === currentDeviceId) return;
+
+  setIsSwitching(true);
+
+  try {
+    // سوئیچ مستقیم روی دیوایس انتخابی کاربر
+    await room.switchActiveDevice('videoinput', deviceId);
+
+    // آپدیت کردن استیت با ID دوربین جدید
+    setCurrentDeviceId(deviceId);
+    console.log(`دوربین با موفقیت به دستگاه جدید تغییر یافت.`);
+  } catch (error) {
+    console.error("خطا در هنگام جابه‌جایی دوربین:", error);
+    toast.error("مشکلی در تغییر دوربین پیش آمد.");
+  } finally {
+    setIsSwitching(false);
+  }
+};
 
 
   const attachTrack = useCallback((track: Track | MediaStreamTrack, participantId: string) => {
@@ -603,28 +670,27 @@ const Main: React.FC = () => {
             >
               {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
             </button>
-            <button
-              onClick={toggleCamera}
-              className="vc-action-btn"
-              style={{
-                background: isCameraOff ? '#ef4444' : '#22c55e',
-                color: 'white',
-                transition: 'all 0.2s ease'
-              }}
-              title={isCameraOff ? "روشن کردن دوربین" : "خاموش کردن دوربین"}
-            >
-              {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
-            </button>
-            {videoDevices.length > 1 && (
-              <button
-                onClick={handleSwitchCamera}
-                disabled={isSwitching}
-                className={`px-4 py-2 rounded-lg font-bold text-white transition-all ${isSwitching ? 'bg-gray-500 cursor-wait' : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-              >
-                {isSwitching ? 'در حال چرخش...' : 'چرخش دوربین'}
-              </button>
-            )}
+           
+            {videoDevices.length > 0 && (
+  <div className="relative min-w-[200px]">
+    <select
+      value={currentDeviceId}
+      onChange={(e) => handleSelectCamera(e.target.value)}
+      disabled={isSwitching}
+      className="w-full px-3 py-2 pr-8 bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait appearance-none"
+    >
+      {videoDevices.map(({ device, quality }) => (
+        <option key={device.deviceId} value={device.deviceId}>
+          {device.label || `دوربین ${device.deviceId.slice(0, 4)}`} (کیفیت تصویر: {quality})
+        </option>
+      ))}
+    </select>
+    {/* آیکون فلش کوچک برای زیبایی ظاهر در کنار منو */}
+    <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-zinc-400 text-xs">
+      ▼
+    </div>
+  </div>
+)}
             <button
               onClick={leaveCall}
               className="vc-action-btn"
