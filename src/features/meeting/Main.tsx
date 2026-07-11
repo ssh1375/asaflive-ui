@@ -259,73 +259,85 @@ const Main: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const fetchVideoDevices = useCallback(async () => {
-  try {
-    // ۱. دریافت تمام سخت‌افزارهای دوربین موجود
-    const devices = await Room.getLocalDevices('videoinput');
-    const devicesWithQuality: VideoDeviceWithQuality[] = [];
+//   const fetchVideoDevices = useCallback(async () => {
+//   try {
+//     // ۱. دریافت تمام سخت‌افزارهای دوربین موجود
+//     const devices = await Room.getLocalDevices('videoinput');
+//     const devicesWithQuality: VideoDeviceWithQuality[] = [];
 
-    // ۲. بررسی تک‌تک دوربین‌ها برای تخمین کیفیت
-    for (const device of devices) {
-      let qualityStr: 'عالی' | 'خوب' | 'معمولی' = 'معمولی';
+//     // ۲. بررسی تک‌تک دوربین‌ها برای تخمین کیفیت
+//     for (const device of devices) {
+//       let qualityStr: 'عالی' | 'خوب' | 'معمولی' = 'معمولی';
 
-      try {
-        // باز کردن موقت دوربین با درخواست کیفیت ایده آل (4K)
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: { exact: device.deviceId },
-            width: { ideal: 3840 },
-            height: { ideal: 2160 }
-          }
-        });
+//       try {
+//         // باز کردن موقت دوربین با درخواست کیفیت ایده آل (4K)
+//         const stream = await navigator.mediaDevices.getUserMedia({
+//           video: {
+//             deviceId: { exact: device.deviceId },
+//             width: { ideal: 3840 },
+//             height: { ideal: 2160 }
+//           }
+//         });
 
-        const track = stream.getVideoTracks()[0];
-        const settings = track.getSettings();
-        const width = settings.width || 0;
-        const height = settings.height || 0;
+//         const track = stream.getVideoTracks()[0];
+//         const settings = track.getSettings();
+//         const width = settings.width || 0;
+//         const height = settings.height || 0;
 
-        // دسته‌بندی کیفیت بر اساس رزولوشن دریافتی واقعی
-        if (width >= 1920 && height >= 1080) {
-          qualityStr = 'عالی'; // Full HD یا بالاتر
-        } else if (width >= 1280 && height >= 720) {
-          qualityStr = 'خوب';  // HD
-        } else {
-          qualityStr = 'معمولی'; // SD
-        }
+//         // دسته‌بندی کیفیت بر اساس رزولوشن دریافتی واقعی
+//         if (width >= 1920 && height >= 1080) {
+//           qualityStr = 'عالی'; // Full HD یا بالاتر
+//         } else if (width >= 1280 && height >= 720) {
+//           qualityStr = 'خوب';  // HD
+//         } else {
+//           qualityStr = 'معمولی'; // SD
+//         }
 
-        // حتماً تراک تستی را می‌بندیم تا دوربین آزاد شود
-        track.stop();
-      } catch (e) {
-        console.warn(`امکان سنجش کیفیت برای دوربین ${device.label} وجود نداشت:`, e);
-      }
+//         // حتماً تراک تستی را می‌بندیم تا دوربین آزاد شود
+//         track.stop();
+//       } catch (e) {
+//         console.warn(`امکان سنجش کیفیت برای دوربین ${device.label} وجود نداشت:`, e);
+//       }
 
-      devicesWithQuality.push({
-        device,
-        quality: qualityStr
-      });
-    }
+//       devicesWithQuality.push({
+//         device,
+//         quality: qualityStr
+//       });
+//     }
 
-    setVideoDevices(devicesWithQuality);
+//     setVideoDevices(devicesWithQuality);
 
-    // انتخاب پیش‌فرض اولین دوربین در صورت عدم انتخاب قبلی
-    if (devicesWithQuality.length > 0 && !currentDeviceId) {
-      setCurrentDeviceId(devicesWithQuality[0].device.deviceId);
-    }
-  } catch (error) {
-    console.error("خطا در دریافت لیست دوربین‌ها:", error);
-  }
-}, [currentDeviceId]);
+//     // انتخاب پیش‌فرض اولین دوربین در صورت عدم انتخاب قبلی
+//     if (devicesWithQuality.length > 0 && !currentDeviceId) {
+//       setCurrentDeviceId(devicesWithQuality[0].device.deviceId);
+//     }
+//   } catch (error) {
+//     console.error("خطا در دریافت لیست دوربین‌ها:", error);
+//   }
+// }, [currentDeviceId]);
 
   // فراخوانی این تابع بعد از وصل شدن به روم یا Mount شدن کامپوننت
   useEffect(() => {
-    fetchVideoDevices();
+  // فقط لیست دستگاه‌ها رو بگیر، بدون باز کردن استریم واقعی برای تست کیفیت
+  const enumerateOnly = async () => {
+    try {
+      const devices = await Room.getLocalDevices('videoinput');
+      setVideoDevices(devices.map(device => ({ device, quality: 'معمولی' })));
+      if (devices.length > 0 && !currentDeviceId) {
+        setCurrentDeviceId(devices[0].deviceId);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    // لیسنر برای زمانی که کاربر دستگاه جدیدی (مثل وب‌کم USB) متصل می‌کند
-    navigator.mediaDevices.addEventListener('devicechange', fetchVideoDevices);
-    return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', fetchVideoDevices);
-    };
-  }, [fetchVideoDevices]);
+  enumerateOnly();
+  navigator.mediaDevices.addEventListener('devicechange', enumerateOnly);
+  return () => {
+    navigator.mediaDevices.removeEventListener('devicechange', enumerateOnly);
+  };
+}, [currentDeviceId]);
+
   // const handleSwitchCamera = async () => {
   //   const room = roomRef.current;
 
