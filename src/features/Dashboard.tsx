@@ -251,7 +251,7 @@ export default function Dashboard() {
     const token = await getToken(meetingId);
 
     if (token) {
-      navigate(`/session/${meetingId}?token=${token}`,{state:{egress:sessionRes?.data?.egress?.id}});
+      navigate(`/session/${meetingId}?token=${token}&egressId=${sessionRes?.data?.egress?.id}`,{state:{egress:sessionRes?.data?.egress?.id}});
     } else {
       navigate(`/session/${meetingId}`);
     }

@@ -192,7 +192,8 @@ import VideoPlayer from './VideoPlayer.js';
 import { AudioPlayer } from './AudioPlayer.js';
 import { Participant } from 'livekit-client';
 import toast from 'react-hot-toast';
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
+import api from '../../api/api.js';
 
 interface User {
   id: string;
@@ -235,6 +236,9 @@ const Main: React.FC = () => {
   const [showLink, setShowLink] = useState(false);
   const [copyLink, setCopyLink] = useState("");
 
+  const [searchParams] = useSearchParams();
+  const egressId = searchParams.get("egressId");
+  const isGuest = location.pathname.includes('guest');
 
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -248,18 +252,33 @@ const Main: React.FC = () => {
   const [expandedUser, setExpandedUser] = useState<User | null>(null);
 
   const { egress } = location.state || {};
-  useEffect(() => {
-  if (!egress) {
-    setError("جلسه ضبط نمی شود");
-    toast.error("خطا در ضبط جلسه رخ داده است");
-  }
-}, [egress]);
   const updateArrows = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     setCanLeft(el.scrollLeft > 8);
     setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
   }, []);
+
+  const checkEgressStatus = useCallback(async () => {
+    const res = await api.get(`/session-manager/meeting/${egressId}`);
+    if (res.data === false) toast.error('ضبط متوقف شده است.');
+  }, [egressId]);
+  useEffect(() => {
+    if (!egressId || isGuest) return;
+    checkEgressStatus();
+    const id = setInterval(checkEgressStatus, 60000);
+    return () => clearInterval(id);
+  }, [checkEgressStatus]);
+
+  useEffect(() => {
+    if (!egress || isGuest) {
+      setError("جلسه ضبط نمی شود");
+      toast.error("خطا در ضبط جلسه رخ داده است");
+    } else {
+      toast.success("جلسه در حال ضبط است")
+    }
+  }, [egress]);
+
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
