@@ -1,11 +1,11 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import homeBlack from "./assets/icons/home-black.svg";
 import homeWhite from "./assets/icons/home-white.svg";
 import userAvatar from "./assets/panel/User.svg";
 import api from "./api/api";
 import toast from "react-hot-toast";
-
+import { useAuth } from "./hooks/useAuth";
 const NAV_ITEMS = [
   {
     to: "/",
@@ -35,7 +35,10 @@ const NAV_ITEMS = [
 
 export default function ManagementPanel() {
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+  const { user, isLoading } = useAuth();
+
   const navigate = useNavigate();
+  const displayName = user ? `${user.firstName} ${user.lastName}` : "خوش آمدید";
 
   useEffect(() => {
     const prev = document.documentElement.style.overflow;
@@ -83,10 +86,12 @@ export default function ManagementPanel() {
         <div className="flex flex-col items-center gap-3 mb-6">
           <div className="rounded-full p-[2px] bg-blue-500 shadow-lg">
             <div className="w-[120px] h-[120px] rounded-full overflow-hidden bg-white/20">
-              <img src={userAvatar} alt="عکس کاربر — رضا فروغ نیا" className="w-full h-full object-cover" />
+              <img src={userAvatar} alt="عکس کاربر " className="w-full h-full object-cover" />
             </div>
           </div>
-          <p className="font-kalameh-black mt-1 text-center text-3xl text-blue-600">رضا فروغ نیا</p>
+          <p className="font-kalameh-black mt-1 text-center text-3xl text-blue-600">
+             {isLoading ? "..." : displayName}
+          </p>
         </div>
         <nav className="flex flex-col gap-2 mt-2 items-center" aria-label="منوی مدیریت">
           {renderLinks()}
@@ -98,7 +103,7 @@ export default function ManagementPanel() {
               navigate("/login")
             }).catch((err) => {
               console.log(err);
-              err?.businessStatus==502?toast.error("ارتباط با سرویس دهنده قطع شده"):toast.error(".لطفا در سامانه ثبت نام نمایید")
+              err?.businessStatus == 502 ? toast.error("ارتباط با سرویس دهنده قطع شده") : toast.error(".لطفا در سامانه ثبت نام نمایید")
             })
           }} className="w-full py-3 text-center text-xl text-white hover:bg-blue-500/20 rounded-lg transition-colors !cursor-pointer">
             خروج
@@ -125,7 +130,7 @@ export default function ManagementPanel() {
         </header><main dir="rtl" className="flex-1 overflow-auto">
           <Outlet />
         </main>
-        
+
       </div>
 
       <div
@@ -155,19 +160,19 @@ export default function ManagementPanel() {
               </div>
               <span className="font-kalameh-Regular">رضا فروغ نیا</span>
             </div>
-            
+
           </div>
           <div className="border-2 border-blue-500 w-full rounded-2xl" />
           <nav className="flex flex-col gap-2 items-center" aria-label="ناوبری موبایل">
             {renderLinks(() => setMobileOpen(false), "w-6 h-6", "text-base")}
           </nav>
-           <button onClick={async () => {
+          <button onClick={async () => {
             await api.post("/auth/logout").then(() => {
               toast.success("خروج با موفقیت انجام شد")
               navigate("/login")
             }).catch((err) => {
               console.log(err);
-              err?.businessStatus==502?toast.error("ارتباط با سرویس دهنده قطع شده"):toast.error(".لطفا در سامانه ثبت نام نمایید")
+              err?.businessStatus == 502 ? toast.error("ارتباط با سرویس دهنده قطع شده") : toast.error(".لطفا در سامانه ثبت نام نمایید")
             })
           }} className="w-full py-3 text-center text-xl text-white hover:bg-blue-500/20 rounded-lg transition-colors !cursor-pointer">
             خروج

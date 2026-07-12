@@ -232,7 +232,7 @@ const Main: React.FC = () => {
   const [showLink, setShowLink] = useState(false);
   const [copyLink, setCopyLink] = useState("");
 
-  
+
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -259,84 +259,25 @@ const Main: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-//   const fetchVideoDevices = useCallback(async () => {
-//   try {
-//     // ۱. دریافت تمام سخت‌افزارهای دوربین موجود
-//     const devices = await Room.getLocalDevices('videoinput');
-//     const devicesWithQuality: VideoDeviceWithQuality[] = [];
-
-//     // ۲. بررسی تک‌تک دوربین‌ها برای تخمین کیفیت
-//     for (const device of devices) {
-//       let qualityStr: 'عالی' | 'خوب' | 'معمولی' = 'معمولی';
-
-//       try {
-//         // باز کردن موقت دوربین با درخواست کیفیت ایده آل (4K)
-//         const stream = await navigator.mediaDevices.getUserMedia({
-//           video: {
-//             deviceId: { exact: device.deviceId },
-//             width: { ideal: 3840 },
-//             height: { ideal: 2160 }
-//           }
-//         });
-
-//         const track = stream.getVideoTracks()[0];
-//         const settings = track.getSettings();
-//         const width = settings.width || 0;
-//         const height = settings.height || 0;
-
-//         // دسته‌بندی کیفیت بر اساس رزولوشن دریافتی واقعی
-//         if (width >= 1920 && height >= 1080) {
-//           qualityStr = 'عالی'; // Full HD یا بالاتر
-//         } else if (width >= 1280 && height >= 720) {
-//           qualityStr = 'خوب';  // HD
-//         } else {
-//           qualityStr = 'معمولی'; // SD
-//         }
-
-//         // حتماً تراک تستی را می‌بندیم تا دوربین آزاد شود
-//         track.stop();
-//       } catch (e) {
-//         console.warn(`امکان سنجش کیفیت برای دوربین ${device.label} وجود نداشت:`, e);
-//       }
-
-//       devicesWithQuality.push({
-//         device,
-//         quality: qualityStr
-//       });
-//     }
-
-//     setVideoDevices(devicesWithQuality);
-
-//     // انتخاب پیش‌فرض اولین دوربین در صورت عدم انتخاب قبلی
-//     if (devicesWithQuality.length > 0 && !currentDeviceId) {
-//       setCurrentDeviceId(devicesWithQuality[0].device.deviceId);
-//     }
-//   } catch (error) {
-//     console.error("خطا در دریافت لیست دوربین‌ها:", error);
-//   }
-// }, [currentDeviceId]);
-
-  // فراخوانی این تابع بعد از وصل شدن به روم یا Mount شدن کامپوننت
   useEffect(() => {
-  // فقط لیست دستگاه‌ها رو بگیر، بدون باز کردن استریم واقعی برای تست کیفیت
-  const enumerateOnly = async () => {
-    try {
-      const devices = await Room.getLocalDevices('videoinput');
-      setVideoDevices(devices.map(device => ({ device, quality: 'معمولی' })));
-      if (devices.length > 0 && !currentDeviceId) {
-        setCurrentDeviceId(devices[0].deviceId);
+    const enumerateOnly = async () => {
+      try {
+        const devices = await Room.getLocalDevices('videoinput');
+        setVideoDevices(devices.map(device => ({ device, quality: 'معمولی' })));
+        if (devices.length > 0 && !currentDeviceId) {
+          setCurrentDeviceId(devices[0].deviceId);
+        }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    };
 
-  enumerateOnly();
-  navigator.mediaDevices.addEventListener('devicechange', enumerateOnly);
-  return () => {
-    navigator.mediaDevices.removeEventListener('devicechange', enumerateOnly);
-  };
-}, [currentDeviceId]);
+    enumerateOnly();
+    navigator.mediaDevices.addEventListener('devicechange', enumerateOnly);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', enumerateOnly);
+    };
+  }, [currentDeviceId]);
 
   // const handleSwitchCamera = async () => {
   //   const room = roomRef.current;
@@ -416,27 +357,24 @@ const Main: React.FC = () => {
   }, []);
 
   const handleSelectCamera = async (deviceId: string) => {
-  const room = roomRef.current;
+    const room = roomRef.current;
 
-  // اگر رومی وجود ندارد، یا در حال سوئیچ هستیم، یا دوربین انتخابی همان دوربین فعلی است کاری نکن
-  if (!room || isSwitching || deviceId === currentDeviceId) return;
+    if (!room || isSwitching || deviceId === currentDeviceId) return;
 
-  setIsSwitching(true);
+    setIsSwitching(true);
 
-  try {
-    // سوئیچ مستقیم روی دیوایس انتخابی کاربر
-    await room.switchActiveDevice('videoinput', deviceId);
+    try {
+      await room.switchActiveDevice('videoinput', deviceId);
 
-    // آپدیت کردن استیت با ID دوربین جدید
-    setCurrentDeviceId(deviceId);
-    console.log(`دوربین با موفقیت به دستگاه جدید تغییر یافت.`);
-  } catch (error) {
-    console.error("خطا در هنگام جابه‌جایی دوربین:", error);
-    toast.error("مشکلی در تغییر دوربین پیش آمد.");
-  } finally {
-    setIsSwitching(false);
-  }
-};
+      setCurrentDeviceId(deviceId);
+      console.log(`دوربین با موفقیت به دستگاه جدید تغییر یافت.`);
+    } catch (error) {
+      console.error("خطا در هنگام جابه‌جایی دوربین:", error);
+      toast.error("مشکلی در تغییر دوربین پیش آمد.");
+    } finally {
+      setIsSwitching(false);
+    }
+  };
 
 
   const attachTrack = useCallback((track: Track | MediaStreamTrack, participantId: string) => {
@@ -448,7 +386,6 @@ const Main: React.FC = () => {
 
     let element: HTMLVideoElement | HTMLAudioElement;
     if (track instanceof Track) {
-      // هم برای RemoteTrack و هم LocalTrack (LiveKit Track)
       element = track.attach();
       if (track.kind === 'video') {
         element.style.width = '100%';
@@ -457,7 +394,6 @@ const Main: React.FC = () => {
       }
       console.log(`✅ ${track.kind === 'video' ? 'ویدیو' : 'صدا'} ${participantId} متصل شد (LiveKit Track)`);
     } else {
-      // MediaStreamTrack خام (fallback)
       if (track.kind === 'video') {
         element = document.createElement('video');
         (element as HTMLVideoElement).srcObject = new MediaStream([track]);
@@ -500,7 +436,6 @@ const Main: React.FC = () => {
           VideoPresets.h360,
         ],
       },
-      // 👈 تنظیمات پیش‌فرض وب‌کم
       videoCaptureDefaults: {
         resolution: VideoPresets.h720.resolution,
       },
@@ -682,27 +617,27 @@ const Main: React.FC = () => {
             >
               {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
             </button>
-           
+
             {videoDevices.length > 0 && (
-  <div className="relative min-w-[200px]">
-    <select
-      value={currentDeviceId}
-      onChange={(e) => handleSelectCamera(e.target.value)}
-      disabled={isSwitching}
-      className="w-full px-3 py-2 pr-8 bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait appearance-none"
-    >
-      {videoDevices.map(({ device, quality }) => (
-        <option key={device.deviceId} value={device.deviceId}>
-          {device.label || `دوربین ${device.deviceId.slice(0, 4)}`} (کیفیت تصویر: {quality})
-        </option>
-      ))}
-    </select>
-    {/* آیکون فلش کوچک برای زیبایی ظاهر در کنار منو */}
-    <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-zinc-400 text-xs">
-      ▼
-    </div>
-  </div>
-)}
+              <div className="relative min-w-[200px]">
+                <select
+                  value={currentDeviceId}
+                  onChange={(e) => handleSelectCamera(e.target.value)}
+                  disabled={isSwitching}
+                  className="w-full px-3 py-2 pr-8 bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait appearance-none"
+                >
+                  {videoDevices.map(({ device, quality }) => (
+                    <option key={device.deviceId} value={device.deviceId}>
+                      {device.label || `دوربین ${device.deviceId.slice(0, 4)}`} (کیفیت تصویر: {quality})
+                    </option>
+                  ))}
+                </select>
+                {/* آیکون فلش کوچک برای زیبایی ظاهر در کنار منو */}
+                <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-zinc-400 text-xs">
+                  ▼
+                </div>
+              </div>
+            )}
             <button
               onClick={leaveCall}
               className="vc-action-btn"

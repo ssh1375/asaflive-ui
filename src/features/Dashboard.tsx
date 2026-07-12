@@ -242,10 +242,12 @@ export default function Dashboard() {
       ...data,
       emptyTimeout: data.emptyTimeout * 60,
     });
-
-    const meetingId = sessionRes.data.meeting.id;
+    console.log(sessionRes);
+    
+    const meetingId = sessionRes.data.roomId;
     toast.success("جلسه با موفقیت ساخته شد", { id: toastId });
-
+    console.log(meetingId);
+    
     const token = await getToken(meetingId);
 
     if (token) {
