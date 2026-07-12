@@ -164,8 +164,9 @@ function MetadataForm({
               value={form.emptyTimeout}
               placeholder='زمان بین ۱ تا ۵ دقیقه'
               onChange={(e) => update('emptyTimeout', Number(e.target.value))}
-              max={5}
+              max={10}
               min={1}
+              disabled
               className={inputClass}
             />
             {errors.emptyTimeout && <p className="text-red-500 text-sm">{errors.emptyTimeout}</p>}
