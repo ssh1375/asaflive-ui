@@ -239,7 +239,8 @@ const Main: React.FC = () => {
   const [searchParams] = useSearchParams();
   const egressId = searchParams.get("egressId");
   const isGuest = location.pathname.includes('guest');
-
+  
+  
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -264,14 +265,14 @@ const Main: React.FC = () => {
     if (res.data === false) toast.error('ضبط متوقف شده است.');
   }, [egressId]);
   useEffect(() => {
-    if (!egressId || isGuest) return;
+    if (!egressId || !isGuest) return;
     checkEgressStatus();
     const id = setInterval(checkEgressStatus, 60000);
     return () => clearInterval(id);
   }, [checkEgressStatus]);
 
   useEffect(() => {
-    if (!egress || isGuest) {
+    if (!egress || !isGuest) {
       setError("جلسه ضبط نمی شود");
       toast.error("خطا در ضبط جلسه رخ داده است");
     } else {
