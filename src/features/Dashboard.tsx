@@ -244,14 +244,14 @@ export default function Dashboard() {
     });
     console.log(sessionRes);
     
-    const meetingId = sessionRes.data.roomId;
+    const meetingId = sessionRes.data.meetingId;
     toast.success("جلسه با موفقیت ساخته شد", { id: toastId });
-    console.log(meetingId);
+    
     
     const token = await getToken(meetingId);
 
     if (token) {
-      navigate(`/session/${meetingId}?token=${token}`);
+      navigate(`/session/${meetingId}?token=${token}`,{state:{egress:sessionRes?.data?.egress?.id}});
     } else {
       navigate(`/session/${meetingId}`);
     }

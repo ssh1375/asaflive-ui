@@ -192,6 +192,7 @@ import VideoPlayer from './VideoPlayer.js';
 import { AudioPlayer } from './AudioPlayer.js';
 import { Participant } from 'livekit-client';
 import toast from 'react-hot-toast';
+import { useLocation } from "react-router-dom";
 
 interface User {
   id: string;
@@ -221,6 +222,8 @@ interface VideoDeviceWithQuality {
 // ];
 
 const Main: React.FC = () => {
+  const location = useLocation();
+
   const roomRef = useRef<Room | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [connected, setConnected] = useState(false);
@@ -244,6 +247,13 @@ const Main: React.FC = () => {
 
   const [expandedUser, setExpandedUser] = useState<User | null>(null);
 
+  const { egress } = location.state || {};
+  useEffect(() => {
+  if (!egress) {
+    setError("جلسه ضبط نمی شود");
+    toast.error("خطا در ضبط جلسه رخ داده است");
+  }
+}, [egress]);
   const updateArrows = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
