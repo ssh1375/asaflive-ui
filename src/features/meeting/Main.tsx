@@ -192,7 +192,7 @@ import VideoPlayer from './VideoPlayer.js';
 import { AudioPlayer } from './AudioPlayer.js';
 import { Participant } from 'livekit-client';
 import toast from 'react-hot-toast';
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import api from '../../api/api.js';
 
 interface User {
@@ -239,8 +239,12 @@ const Main: React.FC = () => {
   const [searchParams] = useSearchParams();
   const egressId = searchParams.get("egressId");
   const isGuest = location.pathname.includes('guest');
-  
-  
+
+  const navigate = useNavigate();
+
+  const GUIDE_KEY = "camera_select_guide_seen";
+  const [showGuide, setShowGuide] = useState(false);
+
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -268,8 +272,8 @@ const Main: React.FC = () => {
     if (!egressId || !isGuest) return;
     checkEgressStatus();
     const id = setInterval(checkEgressStatus, 30000);
-    return () => clearInterval(id);
-  }, [checkEgressStatus]);
+    return () => {clearInterval(id)};
+  }, []);
 
   useEffect(() => {
     if (!egress || !isGuest) {
@@ -344,11 +348,18 @@ const Main: React.FC = () => {
     updateArrows();
   }, [users, updateArrows]);
 
+  useEffect(() => {
+  if (!localStorage.getItem(GUIDE_KEY)) setShowGuide(true);
+}, []);
   const slide = (dir: 'left' | 'right') => {
     scrollRef.current?.scrollBy({ left: dir === 'right' ? 200 : -200, behavior: 'smooth' });
     setTimeout(updateArrows, 350);
   };
 
+  const dismissGuide = () => {
+  setShowGuide(false);
+  localStorage.setItem(GUIDE_KEY, "true");
+};
   const buildUserList = useCallback(() => {
     const room = roomRef.current;
     if (!room) return;
@@ -605,7 +616,8 @@ const Main: React.FC = () => {
 
   const leaveCall = () => {
     roomRef.current?.disconnect();
-    window.location.href = '/';
+    navigate('/')
+    // window.location.href = '/';
   };
 
   const handleSubmit = () => {
@@ -647,6 +659,7 @@ const Main: React.FC = () => {
             >
               {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
             </button>
+              {showGuide && <div className="fixed inset-0 bg-black/70 z-40" onClick={dismissGuide} />}
 
             {videoDevices.length > 0 && (
               <div className="relative min-w-[200px]">
@@ -654,7 +667,7 @@ const Main: React.FC = () => {
                   value={currentDeviceId}
                   onChange={(e) => handleSelectCamera(e.target.value)}
                   disabled={isSwitching}
-                  className="w-full px-3 py-2 pr-8 bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait appearance-none"
+                  className="w-full px-3 py-2 pr-8 bg-zinc-800 text-zinc-100 border  border-zinc-700 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait appearance-none"
                 >
                   {videoDevices.map(({ device, quality }) => (
                     <option key={device.deviceId} value={device.deviceId}>
@@ -662,10 +675,18 @@ const Main: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                {/* آیکون فلش کوچک برای زیبایی ظاهر در کنار منو */}
+
                 <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-zinc-400 text-xs">
                   ▼
                 </div>
+                 {showGuide && (
+    <div className="absolute bottom-full mb-2 bg-gray-800 text-white text-sm p-3 rounded w-56">
+      این قسمت بخش دوربین هست
+      <button onClick={dismissGuide} className="block mt-2 text-xs underline">
+        متوجه شدم
+      </button>
+    </div>
+  )}
               </div>
             )}
             <button
