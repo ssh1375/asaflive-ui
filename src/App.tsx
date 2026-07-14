@@ -6,9 +6,12 @@ import DefineUser from "./DefineUser";
 import OriginDefineUser from "./OriginDefineUser.tsx";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+
+
+
 const Dashboard = lazy(() => import("./features/Dashboard"));
 const Main = lazy(() => import("./features/meeting/Main"));
-const AuthModal=lazy(()=>import("./AuthModal.tsx"))
+const AuthModal = lazy(() => import("./AuthModal.tsx"))
 
 /*controller req server */
 const queryClient = new QueryClient({
@@ -28,32 +31,28 @@ const Spinner = () => (
 
 
 function App() {
-  
-    
-
-
   return (
     <Suspense fallback={<Spinner />}>
       <QueryClientProvider client={queryClient}>
-        <Routes>
-          <Route path="/login" >
-            <Route index element={<AuthModal isOpen={true}  />} />
-          
-          </Route>
-          <Route path="/" element={<ManagementPanel />}>
-            <Route index element={<Dashboard />} />
-            <Route path="define-role-user" element={<DefineUser />} />
-            <Route path="define-user" element={<OriginDefineUser />} />
-          </Route>
+          <Routes>
+            <Route path="/login" >
+              <Route index element={<AuthModal isOpen={true} />} />
+
+            </Route>
+            <Route path="/" element={<ManagementPanel />}>
+              <Route index element={<Dashboard />} />
+              <Route path="define-role-user" element={<DefineUser />} />
+              <Route path="define-user" element={<OriginDefineUser />} />
+            </Route>
 
 
-          <Route path="/session" >
-            <Route index element={<Main />} />
-            <Route path=":id" element={<Main />} />
-            <Route path="guest" element={<Main />} />
-          </Route>
-          <Route path="/*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="/session" >
+              <Route index element={<Main />} />
+              <Route path=":id" element={<Main />} />
+              <Route path="guest" element={<Main />} />
+            </Route>
+            <Route path="/*" element={<Navigate to="/" replace />} />
+          </Routes>
       </QueryClientProvider>
     </Suspense>
   );

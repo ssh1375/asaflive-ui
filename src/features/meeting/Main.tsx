@@ -239,11 +239,11 @@ const Main: React.FC = () => {
   const [searchParams] = useSearchParams();
   const egressId = searchParams.get("egressId");
   const isGuest = location.pathname.includes('guest');
-
+ 
+  
   const navigate = useNavigate();
 
-  const GUIDE_KEY = "camera_select_guide_seen";
-  const [showGuide, setShowGuide] = useState(false);
+  
 
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -269,14 +269,14 @@ const Main: React.FC = () => {
     if (res.data === false) toast.error('ضبط متوقف شده است.');
   }, [egressId]);
   useEffect(() => {
-    if (!egressId || !isGuest) return;
+    if (!egressId && isGuest) return;
     checkEgressStatus();
     const id = setInterval(checkEgressStatus, 30000);
     return () => {clearInterval(id)};
   }, []);
 
   useEffect(() => {
-    if (!egress || !isGuest) {
+    if (!egress && !isGuest) {
       setError("جلسه ضبط نمی شود");
       toast.error("خطا در ضبط جلسه رخ داده است");
     } else {
@@ -348,18 +348,13 @@ const Main: React.FC = () => {
     updateArrows();
   }, [users, updateArrows]);
 
-  useEffect(() => {
-  if (!localStorage.getItem(GUIDE_KEY)) setShowGuide(true);
-}, []);
+ 
   const slide = (dir: 'left' | 'right') => {
     scrollRef.current?.scrollBy({ left: dir === 'right' ? 200 : -200, behavior: 'smooth' });
     setTimeout(updateArrows, 350);
   };
 
-  const dismissGuide = () => {
-  setShowGuide(false);
-  localStorage.setItem(GUIDE_KEY, "true");
-};
+  
   const buildUserList = useCallback(() => {
     const room = roomRef.current;
     if (!room) return;
@@ -617,7 +612,6 @@ const Main: React.FC = () => {
   const leaveCall = () => {
     roomRef.current?.disconnect();
     navigate('/')
-    // window.location.href = '/';
   };
 
   const handleSubmit = () => {
@@ -659,7 +653,6 @@ const Main: React.FC = () => {
             >
               {isCameraOff ? '📷 دوربین خاموش' : '📹 دوربین روشن'}
             </button>
-              {showGuide && <div className="fixed inset-0 bg-black/70 z-40" onClick={dismissGuide} />}
 
             {videoDevices.length > 0 && (
               <div className="relative min-w-[200px]">
@@ -679,14 +672,7 @@ const Main: React.FC = () => {
                 <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-zinc-400 text-xs">
                   ▼
                 </div>
-                 {showGuide && (
-    <div className="absolute bottom-full mb-2 bg-gray-800 text-white text-sm p-3 rounded w-56">
-      این قسمت بخش دوربین هست
-      <button onClick={dismissGuide} className="block mt-2 text-xs underline">
-        متوجه شدم
-      </button>
-    </div>
-  )}
+                
               </div>
             )}
             <button

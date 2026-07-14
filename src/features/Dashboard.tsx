@@ -206,63 +206,68 @@ export default function Dashboard() {
   const { isLoading: isAuthLoading, refetch } = useAuth();
   const { withAuthGuard } = useAuth();
 
- const getToken = async (id?: string): Promise<string | null> => {
-  const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
+  const getToken = async (id?: string): Promise<string | null> => {
+    const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
 
-  try {
-    const userRes = await api.get("/auth/me");
-    const user = userRes.data;
+    try {
+      const userRes = await api.get("/auth/me");
+      const user = userRes.data;
 
-    const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+      const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
 
-    const inviteRes = await api.post(`/session-manager/invite/${id}`, {
-      phone: user.phone,
-      displayName: displayName || "کاربر مهمان", 
-      permissions: { roomJoin: true, canPublish: true, canSubscribe: true }
-    });
-    console.log("XXXXXXX",inviteRes);
-    
-    toast.success("توکن با موفقیت ساخته شد", { id: toastId });
+      const inviteRes = await api.post(`/session-manager/invite/${id}`, {
+        phone: user.phone,
+        displayName: displayName || "کاربر مهمان",
+        permissions: { roomJoin: true, canPublish: true, canSubscribe: true }
+      });
+      console.log("XXXXXXX", inviteRes);
 
-    const token = inviteRes.data?.accessToken; 
-    
-    return token; 
+      toast.success("توکن با موفقیت ساخته شد", { id: toastId });
 
-  } catch (error: any) {
-    console.error("خطا در استعلام کاربر یا ساخت توکن:", error);
-    toast.error("خطا در ساخت توکن", { id: toastId });
-    throw error; 
-  }
-};
-  const handleSessionFinalSubmit = async (data: SessionData) => {
-  const toastId = toast.loading("در حال ساخت جلسه...");
+      const token = inviteRes.data?.accessToken;
 
-  try {
-    const sessionRes = await api.post('/session-manager/new-session', {
-      ...data,
-      emptyTimeout: data.emptyTimeout * 60,
-    });
-    console.log(sessionRes);
-    
-    const meetingId = sessionRes.data.meetingId;
-    toast.success("جلسه با موفقیت ساخته شد", { id: toastId });
-    
-    
-    const token = await getToken(meetingId);
+      return token;
 
-    if (token) {
-      navigate(`/session/${meetingId}?token=${token}&egressId=${sessionRes?.data?.egress?.id}`,{state:{egress:sessionRes?.data?.egress?.id}});
-    } else {
-      navigate(`/session/${meetingId}`);
+    } catch (error: any) {
+      console.error("خطا در استعلام کاربر یا ساخت توکن:", error);
+      toast.error("خطا در ساخت توکن", { id: toastId });
+      throw error;
     }
+  };
+  const handleSessionFinalSubmit = async (data: SessionData) => {
+    const toastId = toast.loading("در حال ساخت جلسه...");
 
-  } catch (error) {
-    console.error("خطا در فرآیند ایجاد جلسه:", error);
-    toast.error("خطا در ساخت جلسه", { id: toastId });
-  } finally {
-    setIsMeetingModalOpen(false);
-  }
-};
+    try {
+      const sessionRes = await api.post('/session-manager/new-session', {
+        ...data,
+        emptyTimeout: data.emptyTimeout * 60,
+      });
+      console.log(sessionRes);
+
+      const meetingId = sessionRes.data.meetingId;
+      toast.success("جلسه با موفقیت ساخته شد", { id: toastId });
+
+
+      const token = await getToken(meetingId);
+
+      if (token) {
+        navigate(`/session/${meetingId}?token=${token}&egressId=${sessionRes?.data?.egress?.id}`, { state: { egress: sessionRes?.data?.egress?.id } });
+      } else {
+        navigate(`/session/${meetingId}`);
+      }
+
+    } catch (error) {
+      console.error("خطا در فرآیند ایجاد جلسه:", error);
+        let message = "خطا در ساخت جلسه";
+      
+      if (typeof error === "object" && error !== null && "friendlyMessage" in error) {
+        message = (error as any).friendlyMessage.at(-1)?.name;
+      }
+      toast.error(`جلسه زیر در حال اجراست ${message}` , { id: toastId });
+    } finally {
+      setIsMeetingModalOpen(false);
+    }
+  };
 
 
   const handleAccessSelect = (type: MediaDeviceType) => {
@@ -398,7 +403,7 @@ export default function Dashboard() {
           >
             انتخاب نوع جلسه
           </button> */}
-          
+
           <button
             onClick={handleProtectedMeetingAction}
             disabled={isAuthLoading}
