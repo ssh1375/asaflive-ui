@@ -258,12 +258,14 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error("خطا در فرآیند ایجاد جلسه:", error);
-        let message = "خطا در ساخت جلسه";
-      
+      let message = "خطا در ساخت جلسه";
+
       if (typeof error === "object" && error !== null && "friendlyMessage" in error) {
         message = (error as any).friendlyMessage.at(-1)?.name;
+        return toast.error(`در حال برگزاری است${message} جلسه`, { id: toastId });
       }
-      toast.error(`جلسه زیر در حال اجراست ${message}` , { id: toastId });
+     
+      toast.error(`${message}`, { id: toastId });
     } finally {
       setIsMeetingModalOpen(false);
     }
