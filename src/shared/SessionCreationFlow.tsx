@@ -164,10 +164,9 @@ function MetadataForm({
               value={form.emptyTimeout}
               placeholder='زمان بین ۱ تا ۵ دقیقه'
               onChange={(e) => update('emptyTimeout', Number(e.target.value))}
-              max={10}
               min={1}
               disabled
-              className={inputClass}
+              className={inputClass +" cursor-not-allowed"}
             />
             {errors.emptyTimeout && <p className="text-red-500 text-sm">{errors.emptyTimeout}</p>}
           </div>

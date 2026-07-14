@@ -240,8 +240,8 @@ export default function Dashboard() {
     try {
       const sessionRes = await api.post('/session-manager/new-session', {
         ...data,
-        // emptyTimeout: data.emptyTimeout * 60,
-        emptyTimeout: data.emptyTimeout ,
+        emptyTimeout: data.emptyTimeout * 60,
+        // emptyTimeout: data.emptyTimeout ,
       });
       console.log(sessionRes);
 
