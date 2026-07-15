@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "prebuild": "rm -f -r /var/www/asaflive-ui/asaflive-ui/*",
+    "prebuild": "rm -f -r /var/www/asaflive-ui/asaflive-ui/dist/*",
     "lint": "eslint .",
     "preview": "vite preview"
   },
