@@ -52,7 +52,7 @@ export default function ManagementPanel() {
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
 
-
+// ggggg
   const navClass = (isActive: boolean) =>
     `flex items-center justify-center gap-3 py-2 px-3 rounded-md transition-colors w-full text-sm ${isActive ? "bg-blue-600 text-black font-semibold shadow-inner" : "hover:bg-white/5 active:bg-white/10"
     }`;
