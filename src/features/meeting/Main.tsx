@@ -271,7 +271,7 @@ const Main: React.FC = () => {
   useEffect(() => {
     if (!egressId && isGuest) return;
     checkEgressStatus();
-    const id = setInterval(checkEgressStatus, 30000);
+    const id = setInterval(checkEgressStatus, 10000);
     return () => {clearInterval(id)};
   }, []);
 
