@@ -23,7 +23,7 @@ const meetingTypes: {
   icon: React.ReactNode;
 }[] = [
     {
-      key: 'khesarat',
+      key: 'CARGO_DAMAGE',
       title: 'خسارت حمل و نقل',
       description: 'بررسی و مدیریت خسارت‌های وارده',
       icon: (
@@ -35,7 +35,7 @@ const meetingTypes: {
       ),
     },
     {
-      key: 'beforeKhesarat',
+      key: 'INSURANCE_VISIT',
       title: 'بازدید',
       description: 'پیش‌بینی و پیشگیری از خسارت‌های احتمالی',
       icon: (
@@ -46,7 +46,7 @@ const meetingTypes: {
       ),
     },
     {
-      key: 'dorehami',
+      key: 'SIMPLE_MEETING',
       title: 'جلسه دور همی',
       description: 'گفت‌وگوی دوستانه و هماهنگی تیم',
       icon: (
@@ -62,9 +62,9 @@ const meetingTypes: {
   ];
 
 const typeNames: Record<SelectedMeetingType, string> = {
-  khesarat: 'خسارت حمل و نقل',
-  beforeKhesarat: 'بازدید',
-  dorehami: 'جلسه دور همی',
+  CARGO_DAMAGE: 'خسارت حمل و نقل',
+  INSURANCE_VISIT: 'بازدید',
+  SIMPLE_MEETING: 'جلسه دور همی',
 };
 
 const inputClass =

@@ -10,7 +10,7 @@ export const SessionFlowState = {
 } as const;
 export type SessionFlowState =
   (typeof SessionFlowState)[keyof typeof SessionFlowState];
-export type SelectedMeetingType = 'khesarat' | 'dorehami' | 'beforeKhesarat';
+export type SelectedMeetingType = 'CARGO_DAMAGE' | 'SIMPLE_MEETING' | 'INSURANCE_VISIT';
 
 export interface SessionData {
   name: string;

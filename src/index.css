@@ -178,6 +178,80 @@ input[type='number'] {
   margin: 10px 0;
 }
 
+.p-column-header-content {
+  justify-content: center;
+  padding: 15px 0;
+}
+
+/* .p-datatable-thead {
+  background-color: #4551f9;
+} */
+
+.pagination {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.pagination-button {
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+
+.pagination-button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.p-link{
+  color: #1958f7;
+}
+.p-datatable .p-column-header-content span.p-column-title {
+  width: 80%;
+  text-align: center;
+}
+
+.p-datatable-tbody .p-datatable-emptymessage td {
+  text-align: center;
+}
+
+.p-paginator .p-paginator-prev .p-paginator-icon,
+.p-paginator .p-paginator-next .p-paginator-icon,
+.p-paginator-first .p-paginator-icon,
+.p-paginator-last .p-paginator-icon {
+  transform: rotate(180deg);
+  }
+
+/* در فایل CSS پروژه */
+.p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  background-color: #2196F3 !important;
+  color: white !important;
+  border-color: #2196F3 !important;
+}
+
+.p-paginator-pages{
+  padding: 0 1rem;
+}
+.p-paginator .p-paginator-page {
+  padding: 7px;
+  margin: 5px;
+  border-radius: 5px;
+  transition: 0.4s !important;
+ 
+}
+.p-paginator .p-paginator-page:hover{
+  background-color: #3e98f890;
+  color: #ffff;
+  
+}
+/* رنگ آبی کم‌رنگ برای ردیف انتخاب‌شده (override کلاس p-highlight) */
+.p-datatable .p-datatable-tbody > tr.p-highlight {
+  background-color: rgba(3, 99, 255, 0.12) !important; /* آبی روشن */
+  /* اگر خواستی متن تیره‌تر بشه: */
+  color: inherit;
+}
 
 
 

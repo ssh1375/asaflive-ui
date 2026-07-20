@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type MeetingType = 'khesarat' | 'dorehami' | 'beforeKhesarat';
+type MeetingType = 'CARGO_DAMAGE' | 'SIMPLE_MEETING' | 'INSURANCE_VISIT';
 
 interface MeetingTypeModalProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface MeetingTypeModalProps {
 
 const meetingTypes: { key: MeetingType; title: string; description: string; icon: React.ReactNode }[] = [
   {
-    key: 'khesarat',
+    key: 'CARGO_DAMAGE',
     title: 'خسارت حمل و نقل',
     description: 'بررسی و مدیریت خسارت‌های وارده',
     icon: (
@@ -23,7 +23,7 @@ const meetingTypes: { key: MeetingType; title: string; description: string; icon
     ),
   },
   {
-    key: 'beforeKhesarat',
+    key: 'INSURANCE_VISIT',
     title: 'بازدید',
     description: 'پیش‌بینی و پیشگیری از خسارت‌های احتمالی',
     icon: (
@@ -34,7 +34,7 @@ const meetingTypes: { key: MeetingType; title: string; description: string; icon
     ),
   },
     {
-    key: 'dorehami',
+    key: 'SIMPLE_MEETING',
     title: 'جلسه دور همی',
     description: 'گفت‌وگوی دوستانه و هماهنگی تیم',
     icon: (

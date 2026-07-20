@@ -31,6 +31,14 @@ const NAV_ITEMS = [
     iconInactive: homeWhite,
     iconAlt: "تعریف  کاربر",
   },
+  {
+    to: "/manage-session",
+    end: false,
+    label: "جلسات",
+    iconActive: homeBlack,
+    iconInactive: homeWhite,
+    iconAlt: "جلسات",
+  },
 ];
 
 export default function ManagementPanel() {
@@ -72,7 +80,7 @@ export default function ManagementPanel() {
             <img
               src={isActive ? item.iconActive : item.iconInactive}
               alt={item.iconAlt}
-              className={`${iconSize} flex-shrink-0`} aria-hidden="true"
+              className={`${iconSize} absolute right-6 flex-shrink-0`} aria-hidden="true"
             />
           </>
         )}

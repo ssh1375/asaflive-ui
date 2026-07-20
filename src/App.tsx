@@ -7,11 +7,10 @@ import OriginDefineUser from "./OriginDefineUser.tsx";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 
-
-
 const Dashboard = lazy(() => import("./features/Dashboard"));
 const Main = lazy(() => import("./features/meeting/Main"));
 const AuthModal = lazy(() => import("./AuthModal.tsx"))
+const ManageSession = lazy(() => import("./ManageSession.tsx"))
 
 /*controller req server */
 const queryClient = new QueryClient({
@@ -43,6 +42,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="define-role-user" element={<DefineUser />} />
               <Route path="define-user" element={<OriginDefineUser />} />
+              <Route path="manage-session" element={<ManageSession />} />
             </Route>
 
 
