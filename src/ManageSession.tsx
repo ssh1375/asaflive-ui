@@ -39,8 +39,7 @@ const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
     document.body.appendChild(link);
     link.click();
     link.parentNode?.removeChild(link);
-    window.open(url, "_blank");
-
+    
     setrefFlage(true)
     window.URL.revokeObjectURL(url);
   } catch (error) {
@@ -99,7 +98,7 @@ const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
           <button
             disabled={isDownloading}
             className="px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
-            onClick={() => { if (!isDownloading) downloadSession(roomName); }}
+            onClick={() => { downloadSession(roomName)}}
           >
             {isDownloading ? "در حال دانلود..." : "دانلود جلسه"}
           </button>
