@@ -330,7 +330,7 @@ export default function Dashboard() {
           }}
         />
       )}
-      <div dir="rtl" className="flex flex-col items-center justify-center h-full text-center px-4">
+      <div  className="flex flex-col items-center justify-center h-full text-center px-4 ">
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
           <Typewriter
             text={[

@@ -2,18 +2,57 @@
 import DynamicTable from "./shared/Tabel/DynamicTable"
 import getNestedValue from "./hooks/pubFunc/getNestedValue";
 import { toShamsi } from "./hooks/pubFunc/dateController";
+import api from "./api/api";
+import toast from "react-hot-toast";
+import { useRef, useState } from "react";
 type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNode>;
 type Metadata = {
   type: string;
 };
 function ManageSession() {
-  // const [refFlage, setrefFlage] = useState<boolean>(false);
+  const [refFlage, setrefFlage] = useState<boolean>(false);
+  const downloadingRef = useRef<Set<string>>(new Set());
+const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+
   const columns = [
     { header: "نام", accessor: "name", showSearch: false },
     { header: "تاریخ جلسه", accessor: "createdAt", showSearch: false },
     { header: "نوع جلسه", accessor: "metadata", showSearch: false },
     { header: "عملیات", accessor: "mession", showSearch: false },
   ];
+ const downloadSession = async (livekitRoomName: string) => {
+  if (downloadingRef.current.has(livekitRoomName)) return; 
+  
+  downloadingRef.current.add(livekitRoomName);
+  setDownloadingIds(new Set(downloadingRef.current));
+  
+  try {
+    toast.loading("جلسه در حال دانلود است ممکن است دانلود این فایل زمانبر باشد")
+    setrefFlage(true)
+    const res = await api.get(`/session-manager/download/${livekitRoomName}`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `session-${livekitRoomName}.mp4`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.open(url, "_blank");
+
+    setrefFlage(true)
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    toast.error("خطایی در دانلود جلسه رخ داده");
+  } finally {
+    setrefFlage(false)
+    downloadingRef.current.delete(livekitRoomName);
+    setDownloadingIds(new Set(downloadingRef.current));
+  }
+};
+
+
   const customRenderers: CustomRenderersType = {
     name: (value: string) => {
       if (value) {
@@ -48,10 +87,25 @@ function ManageSession() {
         </span>
       )
     },
-    createdAt:(value:string)=>{
+    createdAt: (value: string) => {
       return (<span>{toShamsi(value)}</span>)
     },
-    mession:()=><span>....</span>
+    mession: (_, element) => {
+      const roomName = element?.metadata?.livekitRoomName;
+      const isDownloading = downloadingIds.has(roomName);
+
+      return (
+        <div>
+          <button
+            disabled={isDownloading}
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
+            onClick={() => { if (!isDownloading) downloadSession(roomName); }}
+          >
+            {isDownloading ? "در حال دانلود..." : "دانلود جلسه"}
+          </button>
+        </div>
+      );
+    }
   };
   return (
     <div className="flex justify-center items-center flex-col h-screen">
@@ -60,9 +114,9 @@ function ManageSession() {
         <DynamicTable
           apiEndpoint="/session-manager"
           columns={columns}
-          // refreshFlag={refFlage}
+          refreshFlag={refFlage}
           recordsPerPage={10}
-          
+
           customRender={(row, colIndex) => {
             const col = columns[colIndex];
             if (col && customRenderers[col.accessor]) {

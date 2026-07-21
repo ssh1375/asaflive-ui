@@ -88,7 +88,7 @@ export default function ManagementPanel() {
     ));
 
   return (
-    <div className="min-h-screen flex flex-row-reverse text-[color:var(--color-text)] select-none bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen  flex flex-row-reverse text-[color:var(--color-text)] select-none bg-gradient-to-b from-gray-900 to-gray-800">
       {/* Sidebar دسکتاپ */}
       <aside className="hidden md:flex md:flex-col w-72 p-6 border-l border-blue-500 bg-black text-white">
         <div className="flex flex-col items-center gap-3 mb-6">
