@@ -2,8 +2,8 @@
 import DynamicTable from "./shared/Tabel/DynamicTable"
 import getNestedValue from "./hooks/pubFunc/getNestedValue";
 import { toShamsi } from "./hooks/pubFunc/dateController";
-import api from "./api/api";
-import toast from "react-hot-toast";
+// import api from "./api/api";
+// import toast from "react-hot-toast";
 import { useRef, useState } from "react";
 type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNode>;
 type Metadata = {
