@@ -91,7 +91,6 @@ const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
         <DynamicTable
           apiEndpoint="/session-manager"
           columns={columns}
-          refreshFlag={refFlage}
           recordsPerPage={10}
 
           customRender={(row, colIndex) => {
