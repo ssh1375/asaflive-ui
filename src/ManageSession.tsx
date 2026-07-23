@@ -10,7 +10,7 @@ type Metadata = {
   type: string;
 };
 function ManageSession() {
-  const [refFlage, setrefFlage] = useState<boolean>(false);
+  // const [refFlage, setrefFlage] = useState<boolean>(false);
   const downloadingRef = useRef<Set<string>>(new Set());
 const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
