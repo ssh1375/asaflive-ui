@@ -24,31 +24,9 @@ const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   if (downloadingRef.current.has(livekitRoomName)) return; 
   
   downloadingRef.current.add(livekitRoomName);
+  window.open(`https://asaflive.ir/api/session-manager/download/${livekitRoomName}`,'_blank')
   setDownloadingIds(new Set(downloadingRef.current));
-  
-  try {
-    toast.loading("جلسه در حال دانلود است ممکن است دانلود این فایل زمانبر باشد")
-    setrefFlage(true)
-    const res = await api.get(`/session-manager/download/${livekitRoomName}`, {
-      responseType: 'blob',
-    });
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `session-${livekitRoomName}.mp4`);
-    document.body.appendChild(link);
-    link.click();
-    link.parentNode?.removeChild(link);
-    
-    setrefFlage(true)
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    toast.error("خطایی در دانلود جلسه رخ داده");
-  } finally {
-    setrefFlage(false)
-    downloadingRef.current.delete(livekitRoomName);
-    setDownloadingIds(new Set(downloadingRef.current));
-  }
+
 };
 
 
