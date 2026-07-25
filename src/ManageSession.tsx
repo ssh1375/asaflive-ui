@@ -5,6 +5,9 @@ import { toShamsi } from "./hooks/pubFunc/dateController";
 // import api from "./api/api";
 // import toast from "react-hot-toast";
 import { useRef, useState } from "react";
+import toast from "react-hot-toast";
+import api from "./api/api";
+import { useNavigate } from "react-router-dom";
 // import toast from "react-hot-toast";
 // import api from "./api/api";
 type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNode>;
@@ -18,42 +21,43 @@ function ManageSession() {
     { header: "نام", accessor: "name", showSearch: false },
     { header: "تاریخ جلسه", accessor: "createdAt", showSearch: false },
     { header: "نوع جلسه", accessor: "metadata", showSearch: false },
-    { header: "عملیات", accessor: "mession", showSearch: false },
+    { header: "دانلود جلسه", accessor: "download_session", showSearch: false },
+    { header: "ورود به جلسه", accessor: "join_room", showSearch: false },
   ];
- const downloadSession = async (livekitRoomName: string) => {
-  downloadingRef.current.add(livekitRoomName);
-  window.open(`https://asaflive.ir/api/session-manager/download/${livekitRoomName}`,'_blank')
-  
+  const downloadSession = async (livekitRoomName: string) => {
+    downloadingRef.current.add(livekitRoomName);
+    window.open(`https://asaflive.ir/api/session-manager/download/${livekitRoomName}`, '_blank')
+  };
+  const navigate = useNavigate();
 
-};
-//  const getToken = async (id?: string): Promise<string | null> => {
-//     const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
+  const getToken = async (id?: string,egressId?:string): Promise<string | null> => {
+    const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
 
-//     try {
-//       const userRes = await api.get("/auth/me");
-//       const user = userRes.data;
+    try {
+      const userRes = await api.get("/auth/me");
+      const user = userRes.data;
 
-//       const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+      const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
 
-//       const inviteRes = await api.post(`/session-manager/invite/${id}`, {
-//         phone: user.phone,
-//         displayName: displayName || "کاربر مهمان",
-//         permissions: { roomJoin: true, canPublish: true, canSubscribe: true }
-//       });
-//       console.log("XXXXXXX", inviteRes);
+      const inviteRes = await api.post(`/session-manager/invite/${id}`, {
+        phone: user.phone,
+        displayName: displayName || "پشتیبان",
+        permissions: { roomJoin: true, canPublish: true, canSubscribe: true }
+      });
+      
+      toast.success("توکن با موفقیت ساخته شد", { id: toastId });
 
-//       toast.success("توکن با موفقیت ساخته شد", { id: toastId });
+      const token = inviteRes.data?.accessToken;
+      navigate(`/session/${id}?token=${token}&egressId=${egressId}`, { state: { egress: egressId } });
+      return token;
 
-//       const token = inviteRes.data?.accessToken;
+    } catch (error: any) {
+      console.error("خطا در استعلام کاربر یا ساخت توکن:", error);
+      toast.error("خطا در ساخت توکن", { id: toastId });
+      throw error;
+    }
+  };
 
-//       return token;
-
-//     } catch (error: any) {
-//       console.error("خطا در استعلام کاربر یا ساخت توکن:", error);
-//       toast.error("خطا در ساخت توکن", { id: toastId });
-//       throw error;
-//     }
-//   };
 
   const customRenderers: CustomRenderersType = {
     name: (value: string) => {
@@ -92,18 +96,31 @@ function ManageSession() {
     createdAt: (value: string) => {
       return (<span>{toShamsi(value)}</span>)
     },
-    mession: (_, element) => {
+    download_session: (_, element) => {
       const roomName = element?.metadata?.livekitRoomName;
-
       return (
-        <div>
-          <button
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
-            onClick={() => { downloadSession(roomName)}}
-          >
-            دانلود جلسه
-          </button>
-        </div>
+        <button
+          className="px-3 py-1  bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
+          onClick={() => { downloadSession(roomName) }}
+        >
+          دانلود جلسه
+        </button>
+      );
+    },
+    join_room: (_, element) => {
+      const meetingRoom = element?.id;
+      let res=element?.egressdata ? JSON.parse(element?.egressdata) :''
+      console.log("XXXX",res?.egressId);
+      return (
+        <button
+          className="px-3 py-1  bg-yellow-600 hover:bg-yellow-500 disabled:bg-yellow-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
+          onClick={() => {
+            console.log(meetingRoom);
+            getToken(meetingRoom,res?.egressId)
+          }}
+        >
+          ورود به جلسه
+        </button>
       );
     }
   };
