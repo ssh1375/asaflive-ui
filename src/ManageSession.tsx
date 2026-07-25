@@ -5,14 +5,14 @@ import { toShamsi } from "./hooks/pubFunc/dateController";
 // import api from "./api/api";
 // import toast from "react-hot-toast";
 import { useRef, useState } from "react";
+// import toast from "react-hot-toast";
+// import api from "./api/api";
 type CustomRenderersType = Record<string, (val: any, row: any) => React.ReactNode>;
 type Metadata = {
   type: string;
 };
 function ManageSession() {
-  // const [refFlage, setrefFlage] = useState<boolean>(false);
   const downloadingRef = useRef<Set<string>>(new Set());
-const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
   const columns = [
     { header: "نام", accessor: "name", showSearch: false },
@@ -21,14 +21,39 @@ const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
     { header: "عملیات", accessor: "mession", showSearch: false },
   ];
  const downloadSession = async (livekitRoomName: string) => {
-  if (downloadingRef.current.has(livekitRoomName)) return; 
-  
   downloadingRef.current.add(livekitRoomName);
   window.open(`https://asaflive.ir/api/session-manager/download/${livekitRoomName}`,'_blank')
-  setDownloadingIds(new Set(downloadingRef.current));
+  
 
 };
+//  const getToken = async (id?: string): Promise<string | null> => {
+//     const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
 
+//     try {
+//       const userRes = await api.get("/auth/me");
+//       const user = userRes.data;
+
+//       const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+
+//       const inviteRes = await api.post(`/session-manager/invite/${id}`, {
+//         phone: user.phone,
+//         displayName: displayName || "کاربر مهمان",
+//         permissions: { roomJoin: true, canPublish: true, canSubscribe: true }
+//       });
+//       console.log("XXXXXXX", inviteRes);
+
+//       toast.success("توکن با موفقیت ساخته شد", { id: toastId });
+
+//       const token = inviteRes.data?.accessToken;
+
+//       return token;
+
+//     } catch (error: any) {
+//       console.error("خطا در استعلام کاربر یا ساخت توکن:", error);
+//       toast.error("خطا در ساخت توکن", { id: toastId });
+//       throw error;
+//     }
+//   };
 
   const customRenderers: CustomRenderersType = {
     name: (value: string) => {
@@ -69,16 +94,14 @@ const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
     },
     mession: (_, element) => {
       const roomName = element?.metadata?.livekitRoomName;
-      const isDownloading = downloadingIds.has(roomName);
 
       return (
         <div>
           <button
-            disabled={isDownloading}
             className="px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
             onClick={() => { downloadSession(roomName)}}
           >
-            {isDownloading ? "در حال دانلود..." : "دانلود جلسه"}
+            دانلود جلسه
           </button>
         </div>
       );
