@@ -30,9 +30,32 @@ function ManageSession() {
   };
   const navigate = useNavigate();
 
-  const getToken = async (id?: string,egressId?:string): Promise<string | null> => {
-    const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
+    const checkEgressStatus = async (egressId?: string) => {
+    if (!egressId) return true; 
 
+    try {
+      const res = await api.get(`/session-manager/meeting/${egressId}`);
+      
+      if (res.data === false) {
+        toast.error('ضبط متوقف شده است و امکان ورود به این جلسه وجود ندارد.');
+        return false;
+      }
+      
+      return res.data; 
+    } catch (error) {
+      console.error("خطا در چک کردن وضعیت خروجی:", error);
+      toast.error("خطا در استعلام وضعیت جلسه");
+      return false;
+    }
+  };
+
+  const getToken = async (id?: string, egressId?: string): Promise<string | null> => {
+    const isEgressActive = await checkEgressStatus(egressId);
+    
+    if (!isEgressActive) return null;
+
+    const toastId = toast.loading("در حال دریافت توکن و ساخت دعوتنامه...");
+    
     try {
       const userRes = await api.get("/auth/me");
       const user = userRes.data;
@@ -44,19 +67,24 @@ function ManageSession() {
         displayName: displayName || "پشتیبان",
         permissions: { roomJoin: true, canPublish: true, canSubscribe: true }
       });
-      
+
       toast.success("توکن با موفقیت ساخته شد", { id: toastId });
 
       const token = inviteRes.data?.accessToken;
-      navigate(`/session/${id}?token=${token}&egressId=${egressId}`, { state: { egress: egressId } });
+      
+      navigate(`/session/${id}?token=${token}&egressId=${egressId}`, { 
+        state: { egress: egressId } 
+      });
+      
       return token;
 
     } catch (error: any) {
       console.error("خطا در استعلام کاربر یا ساخت توکن:", error);
       toast.error("خطا در ساخت توکن", { id: toastId });
-      throw error;
+      return null; 
     }
   };
+
 
 
   const customRenderers: CustomRenderersType = {
@@ -109,14 +137,14 @@ function ManageSession() {
     },
     join_room: (_, element) => {
       const meetingRoom = element?.id;
-      let res=element?.egressdata ? JSON.parse(element?.egressdata) :''
-      console.log("XXXX",res?.egressId);
+      let res = element?.egressdata ? JSON.parse(element?.egressdata) : ''
+      console.log("XXXX", res);
       return (
         <button
           className="px-3 py-1  bg-yellow-600 hover:bg-yellow-500 disabled:bg-yellow-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
           onClick={() => {
             console.log(meetingRoom);
-            getToken(meetingRoom,res?.egressId)
+            getToken(meetingRoom, res?.egressId)
           }}
         >
           ورود به جلسه
@@ -125,7 +153,7 @@ function ManageSession() {
     }
   };
   return (
-    <div className="flex justify-center items-center flex-col h-screen">
+    <div className="flex justify-center items-center flex-col min-h-screen">
       <h1 className="text-5xl text-white font-extrabold mb-4">مدیریت جلسات</h1>
       <div className="w-11/12">
         <DynamicTable
