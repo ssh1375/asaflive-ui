@@ -20,17 +20,30 @@ type MemberFormProps = {
   setCopyLink?: (value: string) => void;
 };
 
-export function MemberForm({ onSubmit, onClose , setShowLink,setCopyLink }: MemberFormProps) {
+export function MemberForm({ onSubmit, onClose, setShowLink, setCopyLink }: MemberFormProps) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [receiveMedia, setReceiveMedia] = useState<string>("yes");
   const [sendMedia, setSendMedia] = useState<string>("yes");
   const [errors, setErrors] = useState<Errors>({});
   const { id } = useParams();
-  useEffect(()=>{
+  useEffect(() => {
     setReceiveMedia("yes")
     setSendMedia("yes")
-  },[])
+  }, [])
+  const handelSendSMS = async (token: string, phone: string) => {
+    toast.loading('در حال ارسال لینک جلسه')
+    try {
+      const res = await api.post("/session-manager/send-sms", {
+        link: `session/guest?token=${token}`,
+        phone: phone
+      })
+      res?.data?.StrRetStatus ? toast.success("پیامک با موفقیت ارسال شد") : ""
+    } catch (error) {
+      console.log(error);
+      toast.error("خطا در ارسال پیامک")
+    }
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -61,9 +74,10 @@ export function MemberForm({ onSubmit, onClose , setShowLink,setCopyLink }: Memb
         permissions: { "roomJoin": true, "canPublish": result?.data?.sendMedia, "canSubscribe": result?.data?.receiveMedia }
       })
       console.log(res);
-      toast.success("پیامک برای شخص مورد نظر ارسال گردید")
+      toast.success("لینک با موفقیت ساخته شد")
       setShowLink?.(true);
       setCopyLink?.(`https://asaflive.ir/session/guest?token=${res?.data?.accessToken}`)
+      handelSendSMS(res?.data?.accessToken, result?.data?.mobile)
     } catch (error) {
       toast.error("خطا در افزودن کاربر به جلسه")
     }
@@ -71,6 +85,7 @@ export function MemberForm({ onSubmit, onClose , setShowLink,setCopyLink }: Memb
     setErrors({});
     onSubmit(result.data);
   };
+
 
   return (
     <div className="member-form-container">
@@ -91,7 +106,7 @@ export function MemberForm({ onSubmit, onClose , setShowLink,setCopyLink }: Memb
 
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">افزودن عضو جدید</h2>
-              {onClose  && (
+              {onClose && (
                 <button
                   type="button"
                   onClick={onClose}
