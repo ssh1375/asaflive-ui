@@ -38,7 +38,7 @@ export function MemberForm({ onSubmit, onClose, setShowLink, setCopyLink }: Memb
         link: `session/guest?token=${token}`,
         phone: phone
       })
-      res?.data?.StrRetStatus ? toast.success("پیامک با موفقیت ارسال شد") : ""
+      res?.data?.StrRetStatus==="Ok" ? toast.success("پیامک با موفقیت ارسال شد") : toast.error("پیامک معتبر نمی باشد")
     } catch (error) {
       console.log(error);
       toast.error("خطا در ارسال پیامک")
