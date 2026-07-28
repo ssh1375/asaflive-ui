@@ -3,8 +3,8 @@ import moment from 'moment-jalaali';
 export type DateInput = string | number | Date | null | undefined;
 
 export const toShamsi = (
-  gregorianDate: DateInput, 
-  includeTime: boolean = false, 
+  gregorianDate: DateInput,
+  includeTime: boolean = false,
   includeSeconds: boolean = false
 ): string => {
   if (!gregorianDate) {
@@ -13,7 +13,7 @@ export const toShamsi = (
 
   try {
     const dateObject = moment(gregorianDate);
-    let formatString = "jYYYY/jMM/jDD"; 
+    let formatString = "jYYYY/jMM/jDD";
 
     if (!dateObject.isValid()) {
       console.warn("⚠️ تاریخ ورودی برای تبدیل به شمسی نامعتبر است:", gregorianDate);
@@ -21,7 +21,8 @@ export const toShamsi = (
     }
 
     if (includeTime) {
-      formatString += includeSeconds ? " - HH:mm:ss" : " - HH:mm";
+      const timeFormat = includeSeconds ? "HH:mm:ss" : "HH:mm";
+      formatString = `${timeFormat} - ${formatString}`;
     }
 
     return dateObject.format(formatString);
