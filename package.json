@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "prebuild": "rm -f -r /var/www/asaflive-ui/asaflive-ui/dist/*",
+    "deploy": "git pull origin main && npm install && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
