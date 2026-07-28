@@ -122,7 +122,7 @@ function ManageSession() {
       )
     },
     createdAt: (value: string) => {
-      return (<span>{toShamsi(value)}</span>)
+      return (<span>{toShamsi(value,true)}</span>)
     },
     download_session: (_, element) => {
       const roomName = element?.metadata?.livekitRoomName;
@@ -140,6 +140,7 @@ function ManageSession() {
       let res = element?.egressdata ? JSON.parse(element?.egressdata) : ''
       // EGRESS_ACTIVE
       // EGRESS_STARTING
+      element?.egressdata ? console.log(element?.name,JSON.parse(element?.egressdata)) : ""
       if (res?.status === "EGRESS_ACTIVE" || res?.status === "EGRESS_STARTING") {
         return (
           <button
