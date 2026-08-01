@@ -1,5 +1,5 @@
 // components/OriginDefineUser.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TextInput from "./shared/Forms/TextInput";
 import toast from 'react-hot-toast';
 import { userSchema } from "./hooks/validation/create-origin-user";
@@ -49,18 +49,44 @@ export default function OriginDefineUser({
     setEditingUserId(null);
     setErrors({});
   };
+  const findUserRoles = async (id: string) => {
+    try {
+      const res = await api.get(`/rbac/users/${id}/permissions`);
+      toast.success("نقش‌ها با موفقیت دریافت شد");
+
+      setSelectedUser((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          roles: res.data
+        };
+      });
+
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      toast.error("خطا در دریافت اطلاعات کاربران");
+    }
+  };
+
+
 
   const customRenderers: CustomRenderersType = {
     phone: (value: string) => (
       <span className="font-mono text-blue-400" dir="ltr">{value}</span>
     ),
     access: (_, row: any) => {
+
+
       return (
         <button
-          onClick={() => setSelectedUser({
-            id: row.id,
-            name: `${row.firstName} ${row.lastName}`
-          })}
+          onClick={() => {
+            setSelectedUser({
+              id: row.id,
+              name: `${row.firstName} ${row.lastName}`
+            });
+            findUserRoles(row?.id)
+          }}
           className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
         >
           مدیریت نقش‌ها
@@ -146,6 +172,11 @@ export default function OriginDefineUser({
     }
   };
 
+  useEffect(() => {
+    console.warn("مقدار جدید کاربر انتخاب شده:", selectedUser);
+  }, [selectedUser]); 
+
+
   return (
     <div className="flex items-center flex-col justify-center min-h-screen bg-gray-900 p-4">
       <div className="w-full max-w-7xl bg-black/60 border border-blue-500/30 rounded-2xl p-6 flex flex-col gap-6 shadow-2xl">
@@ -211,15 +242,14 @@ export default function OriginDefineUser({
           <button
             type="button"
             onClick={handleSubmit}
-            className={`flex-1 ${
-              editingUserId
-                ? "bg-yellow-600 hover:bg-yellow-500"
-                : "bg-blue-600 hover:bg-blue-500"
-            } text-white text-sm px-4 py-2 rounded cursor-pointer transition-colors`}
+            className={`flex-1 ${editingUserId
+              ? "bg-yellow-600 hover:bg-yellow-500"
+              : "bg-blue-600 hover:bg-blue-500"
+              } text-white text-sm px-4 py-2 rounded cursor-pointer transition-colors`}
           >
             {editingUserId ? "ذخیره تغییرات" : "ذخیره کاربر"}
           </button>
-          
+
           {editingUserId && (
             <button
               type="button"
@@ -254,6 +284,7 @@ export default function OriginDefineUser({
         <RoleAssignmentModal
           userId={selectedUser.id}
           userName={selectedUser.name}
+          user={selectedUser}
           onClose={() => setSelectedUser(null)}
         />
       )}

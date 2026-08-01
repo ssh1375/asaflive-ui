@@ -363,7 +363,8 @@ const Main: React.FC = () => {
       room.localParticipant,
       ...Array.from(room.remoteParticipants.values())
     ];
-
+    // console.log(participants);
+    
     const allUsers: User[] = participants.map((p) => {
       const cameraPub = p.getTrackPublication(Track.Source.Camera);
       const micPub = p.getTrackPublication(Track.Source.Microphone);

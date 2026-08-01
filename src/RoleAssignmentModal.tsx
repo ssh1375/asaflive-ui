@@ -26,12 +26,14 @@ interface RoleAssignmentModalProps {
   userId: string;
   onClose: () => void;
   userName?: string;
+  user?: any;
 }
 
 export default function RoleAssignmentModal({
   userId,
   onClose,
   userName,
+  user,
 }: RoleAssignmentModalProps) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set());
@@ -41,6 +43,20 @@ export default function RoleAssignmentModal({
   useEffect(() => {
     fetchRoles();
   }, []);
+  useEffect(() => {
+    if (!user || !user.roles) return;
+
+    const rolesArray = Array.isArray(user.roles)
+      ? user.roles
+      : (Array.isArray(user.roles.roles) ? user.roles.roles : null);
+
+    if (rolesArray) {
+      const existingRoleIds = rolesArray.map((role: any) => String(role.id));
+      setSelectedRoleIds(new Set(existingRoleIds));
+      toast.success("نقش های کاربر بررسی شد")
+    }
+  }, [user]);
+
 
   const fetchRoles = async () => {
     setLoading(true);
@@ -119,19 +135,17 @@ export default function RoleAssignmentModal({
                 <div
                   key={role.id}
                   onClick={() => toggleRole(role.id)}
-                  className={`border rounded-xl p-4 cursor-pointer transition-all ${
-                    selectedRoleIds.has(role.id)
+                  className={`border rounded-xl p-4 cursor-pointer transition-all ${selectedRoleIds.has(role.id)
                       ? "border-blue-500 bg-blue-500/10"
                       : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                        selectedRoleIds.has(role.id)
+                      className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedRoleIds.has(role.id)
                           ? "border-blue-500 bg-blue-500"
                           : "border-gray-600"
-                      }`}
+                        }`}
                     >
                       {selectedRoleIds.has(role.id) && (
                         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +162,7 @@ export default function RoleAssignmentModal({
                       <div className="mt-2 text-xs text-gray-500">
                         دامنه: {role.domain.name}
                       </div>
-                      
+
                       {role.permissions.length > 0 && (
                         <div className="mt-3">
                           <div className="text-xs text-gray-400 mb-2">
