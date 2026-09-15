@@ -177,7 +177,7 @@ function ManageSession() {
     delete_room: (_, element) => {
       const roomId = element?.id;
       const sessionName = element?.name?.split(":")[0] || "این جلسه";
-
+      
       return (
         <button
           className="px-3 py-1 bg-red-600 hover:bg-red-500 disabled:bg-red-400 disabled:cursor-not-allowed text-white text-sm rounded transition-colors cursor-pointer"
@@ -190,7 +190,7 @@ function ManageSession() {
             });
           }}
         >
-          حذف جلسه
+          حذف رکورد جلسه
         </button>
       );
     },
@@ -220,7 +220,7 @@ function ManageSession() {
       
       <div className="w-11/12">
         <DynamicTable
-          key={refreshKey} 
+          // key={refreshKey} 
           apiEndpoint="/session-manager"
           columns={columns}
           recordsPerPage={10}
